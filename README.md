@@ -7,6 +7,8 @@ This is on top of all of IPython's other frontend features like Markdown renderi
 Please note, the development of this language kernel for IPython is at it's very early stages. This is Alpha. Take with a large pinch of salt. No sugar necessary, because it's pretty damn sweet! :)
 
 
+#Demo
+[You can view a demo IErlang notebook on IPython's Nbviewer](http://nbviewer.ipython.org/gist/anonymous/10775415)
 
 
 #IErlang Installation
