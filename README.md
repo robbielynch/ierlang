@@ -87,7 +87,8 @@ Therefore, when IPython receives messages from IErlang kernel,  it doesn't know 
   You might need to change the permissions of this file to edit it.
   ```
   sudo chmod 777 /Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py
-  ```S
+  ```
+
   * #####Ubuntu
   ```
   /Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py```
