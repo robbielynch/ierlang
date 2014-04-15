@@ -81,14 +81,17 @@ Therefore, when IPython receives messages from IErlang kernel,  it doesn't know 
 ####Now, time to edit the file:
 * Open the file located at
   * #####OSX
-```
-/Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py```
-You might need to change the permissions of this file to edit it.
-```
-sudo chmod 777 /Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py```
+  ```
+  /Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py
+  ```
+  You might need to change the permissions of this file to edit it.
+  ```
+  sudo chmod 777 /Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py
+  ```S
   * #####Ubuntu
-```
-/Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py```
-You might need to change the permissions of this file to edit it.
-```
-sudo chmod 777 /usr/local/lib/Python/2.7/dist-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py```
+  ```
+  /Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py```
+  You might need to change the permissions of this file to edit it.
+  ```
+  sudo chmod 777 /usr/local/lib/Python/2.7/dist-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py
+  ```
