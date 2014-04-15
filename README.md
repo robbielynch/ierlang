@@ -117,15 +117,43 @@ Therefore, when IPython receives messages from IErlang kernel,  it doesn't know 
 
   * **Ubuntu**
   ```
-  /Library/Python/2.7/site-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py```
+  /usr/local/lib/python2.7/dist-packages/IPython/kernel/zmq/session.py
+  ```
   You might need to change the permissions of this file to edit it
   ```
-  sudo chmod 777 /usr/local/lib/Python/2.7/dist-packages/YOUR-IPYTHON-PACKAGE-NAME.egg/IPython/kernel/zmq/session.py
+  sudo chmod 777 /usr/local/lib/python2.7/dist-packages/IPython/kernel/zmq/session.py
   ```
  
 
 ###7. Edit the IErlang start up script
-Navigate to ~/ierlang-dev/src
-* Open both files beginning with start-ierlang-*.sh and check that the escript location corresponds to the escript location on your machine. Change it if it not correct.
+Navigate to `~/ierlang-dev/ierlang/src`
+* Open both files beginning with `start-ierlang-*.sh` and check that the escript location corresponds to the escript location on your machine. Change it if it not correct.
 
 
+###8. Start IErlang
+* Navigate to `~/ierlang-dev/ierlang/`
+* Run the script `./ierlang-notebook.sh`
+* Pray that it works
+
+
+
+#Possible Errors
+* If you see an error in the terminal referring to python code:
+`No such file or directory` and if you see `subprocess.py` a couple of lines above this:
+  This means that `ierlang/src/start-ierl-notebook.sh` is not referring to the correct location of your escript.
+
+* If you see an error about `erlzmq:context()`, this means your ERL_LIBS are not configured correctly.
+
+
+#Known Issues
+* Encoding tuples inside other data structures
+* Encoding floats inside other data structures
+* **ERROR MESSAGES** - They do not appear (Something to do with pyerr on ierlang side)
+* Cannot create notebooks outside ierlang/src directory
+* Horrible installation and setup
+* Having to edit the IPython code in order to parse erlang strings (lists of ints)
+    * Note that the editing of the IPython code does not affect the normal IPython in any way.
+* **No Variable bindings** (yet)
+* Tuples are converted to lists when encoding
+* Project structure - it's a mess
+* Not handling all of IPython's messages (yet)
