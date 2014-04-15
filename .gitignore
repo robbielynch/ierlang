@@ -1,0 +1,13 @@
+.eunit
+deps
+*.o
+*.beam
+*.plt
+*.json
+erl_crash.dump
+*.iml
+*.sh~
+.idea/
+.idea/*
+.ipynb_checkpoints/
+.ipynb_checkpoints/*
