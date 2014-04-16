@@ -1,10 +1,10 @@
 -module (code_manager).
--export ([module_or_expression/1]).
+-export ([module_or_expression/2]).
 
-%% @spec module_or_expression(list()) -> tuple()
+%% @spec module_or_expression(list(), list()) -> tuple()
 %% @doc Determines whether the incoming code is a module that is to be compiled
 %%      or an erlang expression to be executed.
-module_or_expression([$-,$m,$o,$d,$u,$l,$e,$(|RestOfCode])->
+module_or_expression([$-,$m,$o,$d,$u,$l,$e,$(|RestOfCode], _Bindings)->
   erlang:display("In module or expression"),
   % If code is a module, do the following steps:
   % 1. Get module name.
@@ -28,12 +28,12 @@ module_or_expression([$-,$m,$o,$d,$u,$l,$e,$(|RestOfCode])->
   erlang:display("Type of compileresult = "),
   erlang:display(type_of(CompileResult)),
   {ok,CompileResult};
-module_or_expression([$;,$;|Code])->
+module_or_expression([$;,$;|Code], _Bindings)->
   OsCmd1 = string:concat("os:cmd(\"", Code),
   OsCmd2 = string:concat(OsCmd1, "\")."),
-  execute(OsCmd2);
-module_or_expression(Code)->
-  execute(Code).
+  execute(OsCmd2, _Bindings);
+module_or_expression(Code, Bindings)->
+  execute(Code, Bindings).
 
 
 %% @spec get_module_name_from_code(list()) -> list()
@@ -45,12 +45,13 @@ get_module_name_from_code([$_|RestOfCode])->
 get_module_name_from_code([Char|RestOfCode]) when (Char > 96) and (Char < 123)->
   lists:append([Char], get_module_name_from_code(RestOfCode)).
 
-
-execute(Code)->
+%% @doc Executes the given code with the given variable bindings
+%%      Returns the code execution value and the new variable bindings
+execute(Code, Bindings)->
 	try
 	    {ok, Tokens, _} = erl_scan:string(Code),
 	    {ok, [Form]} = erl_parse:parse_exprs(Tokens),
-	    {value, Value, Binding} = erl_eval:expr(Form, []),
+	    {value, Value, NewBindings} = erl_eval:expr(Form, Bindings),
       case type_of(Value) of
         %Convert these types to a string due to errors with json encoding
         pid -> ReturnValue = pid_to_list(Value);
@@ -59,7 +60,7 @@ execute(Code)->
         _Else -> ReturnValue = Value
       end,
       io:format("code execution return value = ~p~n", [ReturnValue]),
-	    {ok, ReturnValue, Binding}
+	    {ok, ReturnValue, NewBindings}
 	catch
 	    Exception:Reason ->
 	    {error, Exception, Reason}

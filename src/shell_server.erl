@@ -18,7 +18,7 @@ start(ShellSocket, IOPubSocket) ->
     loop(ShellSocket, IOPubSocket, ExeCount).
 
 loop(ShellSocket, IOPubSocket, ExeCount) ->
-   shell_listener(ShellSocket, IOPubSocket, ExeCount),
+   shell_listener(ShellSocket, IOPubSocket, ExeCount, []),
    loop(ShellSocket, IOPubSocket, ExeCount).
 
 
@@ -26,8 +26,7 @@ loop(ShellSocket, IOPubSocket, ExeCount) ->
 %% The shell listener listens for messages from 
 %% IPython. Parses the message and determines
 %% what IPython wants us to do next.
-shell_listener(ShellSocket, IOPubSocket, ExeCount)->
-  %%TODO - shell seems to be blocked, maybe create new process for it
+shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 	io:format("in shell listener~n"),
 	%%%io:format("[Shell] In shell_listener ~n"),
 	{ok, UUID} = erlzmq:recv(ShellSocket),
@@ -82,8 +81,8 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount)->
       %send_pyin(IOPubSocket, Code, [MessageID, Session, Username, Header, Date]),
 
 			%% EVALUATE ERLANG CODE
-			case code_manager:module_or_expression(Code) of
-        %% Module Compilation Results
+			case code_manager:module_or_expression(Code, Bindings) of
+        %% Module Compilation Results--------------------------------------------------------------
         {ok, CompileResultList}->
           case CompileResultList of
             [] -> CompileResult = "Successfully Compiled";
@@ -112,8 +111,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount)->
           message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
 
           %% Call Shell Listener again, incrementing the execution count by one.
-          shell_listener(ShellSocket, IOPubSocket, ExeCount+1);
-				{ok, Value, _Binding}->
+          shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings);
+        %% Successful Code Execution----------------------------------------------------------------
+				{ok, Value, NewBindings}->
 					io:format("[Shell] Code Execution Result = ~p~n", [Value]),
 
 					%% EXECUTE_REPLY MESSAGE
@@ -136,8 +136,8 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount)->
 					message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
 
           %% Call Shell Listener again, incrementing the execution count by one.
-          shell_listener(ShellSocket, IOPubSocket, ExeCount+1);
-        %%PYERR MESSAGE TODO - not working
+          shell_listener(ShellSocket, IOPubSocket, ExeCount+1, NewBindings);
+        %% Unsuccessful Code Execution TODO - not working------------------------------------------
 				{error, Exception, Reason}->
 					io:format("[Shell] Code Execution Exception = ~p~n", [Exception]),
           erlang:display("Building error execute reply"),
@@ -163,7 +163,7 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount)->
           IdleStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, IdleReplyHeader, Header,
                                                         IdleStatusReplyContent, Metadata),
           message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
-          shell_listener(ShellSocket, IOPubSocket, ExeCount+1)
+          shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings)
 			end;
     %%COMPLETE_REQUEST
     {ok, _Username, _Session, _MessageID, "complete_request", _Date}->
@@ -174,7 +174,8 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount)->
           io:format("TODO");
         {error, Reason} ->
           io:format("[Shell] Error parsing complete_request - ~s~n", [Reason])
-      end;
+      end,
+      shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings);
     {error, _Username, _Session, _MessageID, _UnexpectedMessageType, _Date} ->
       io:format("[Shell] Received unexpected message - ~s~n", [_UnexpectedMessageType]);
     {error, Reason} ->
