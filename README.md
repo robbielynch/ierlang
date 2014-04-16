@@ -149,13 +149,13 @@ Navigate to `~/ierlang-dev/ierlang/src`
 
 #Known Issues
 * Encoding tuples inside other data structures
-* Encoding floats inside other data structures
+* ~~Encoding floats inside other data structures~~
 * **ERROR MESSAGES** - They do not appear (Something to do with pyerr on ierlang side)
 * Cannot create notebooks outside ierlang/src directory
 * Horrible installation and setup
 * Having to edit the IPython code in order to parse erlang strings (lists of ints)
     * Note that the editing of the IPython code does not affect the normal IPython in any way.
-* **No Variable bindings** (yet)
+* ~~**No Variable bindings** (yet)~~
 * Tuples are converted to lists when encoding
 * Project structure - it's a mess
 * Not handling all of IPython's messages (yet)
