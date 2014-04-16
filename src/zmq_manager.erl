@@ -36,11 +36,9 @@ run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort}, {iopu
 
   % Start the heartbeat server
   spawn(heartbeat_server, start, [HeartbeatSocket]),
-  % Start the heartbeat server
-  %spawn(iopub, start, [IOPubSocket]),
   % Start the Shell server
   spawn(shell_server, start, [ShellSocket, IOPubSocket]),
-  % Start the Shell server
+  % Start the Control server
   spawn(control_server, start, [ControlSocket]),
 
   %% Constantly listen and reply to messages

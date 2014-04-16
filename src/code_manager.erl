@@ -53,7 +53,6 @@ execute(Code)->
 	    {value, Value, Binding} = erl_eval:expr(Form, []),
       case type_of(Value) of
         %Convert these types to a string due to errors with json encoding
-        float -> ReturnValue = float_to_list(Value);
         pid -> ReturnValue = pid_to_list(Value);
         bitstring -> ReturnValue = bitstring_to_list(Value); %TODO - Bitstrings like <<1:1>> not working
         tuple -> ReturnValue = tuple_to_list(Value);
