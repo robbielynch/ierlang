@@ -10,7 +10,7 @@
 -author("Robbie Lynch").
 
 %% API
--export([send_pyout/3,send_pyin/3, send_pyerr/6, send_reply/2]).
+-export([send/4,send_pyout/3,send_pyin/3, send_pyerr/6, send_reply/2]).
 
 send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
   %%Build and send Pyout reply
@@ -42,6 +42,14 @@ send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
                             ReplyHeader, IPythonHeader, PyerrContentReply, Metadata),
   %%io:format("[IOPub] Sending Pyin... ~n"),
   send_reply(PyerrReplyList, IOPubSocket).
+
+%%%%%display_data, IOPubSocket, {"username", Value, {}}, [Session, Header, Date]
+send(display_data, IOPubSocket, {Source, RawData, Metadata}, [Session, IPythonHeader, Date])->
+  ReplyHeader = message_builder:generate_header_reply(Session, "display_data", Date),
+  DisplayDataContentReply = message_builder:generate_content_reply(display_data, {Source, RawData, Metadata}),
+  DisplayDataReplyList = message_builder:msg_parts_to_ipython_msg(Session,
+                              ReplyHeader, IPythonHeader, DisplayDataContentReply, Metadata),
+  send_reply(DisplayDataReplyList, IOPubSocket).
 
 
 send_reply([UUIDs, Delim, HMAC, Header, ParentHeader, Metadata, Content], Socket)->

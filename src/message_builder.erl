@@ -124,7 +124,7 @@ generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExp
 %% @spec generate_content_reply(atom(), tuple()) -> list()
 %% @doc Creates the content reply for an unsuccessful execute_reply
 %%      sent over the shell socket.
-generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionName, _ExceptionValue, _Traceback})->
+generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionName, _ExceptionValue, Traceback})->
   %%io:format("payload = ~s~n", [Payload]),
   erlang:display("in generate_content_reply for execute reply error"),
   Content = {struct,	[
@@ -132,7 +132,7 @@ generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionN
     {execution_count, ExecutionCount},
     {ename, ExceptionName},
     {evalue, "ERROR DUDE"},
-    {traceback, []}
+    {traceback, Traceback}
   ]},
   erlang:display("converting to json"),
   ContentJson = mochijson2:encode(Content),
@@ -169,12 +169,12 @@ generate_content_reply(pyin, {Code, ExecutionCount})->
 %% @spec generate_content_reply(atom(), tuple()) -> list()
 %% @doc Creates the content reply for pyerr
 %%      sent over the iopub socket.
-generate_content_reply(pyerr, {_ExceptionName, ExecutionCount, _ExceptionValue, _Traceback})->
+generate_content_reply(pyerr, {_ExceptionName, ExecutionCount, _ExceptionValue, Traceback})->
   Content = {struct,	[
     {execution_count, ExecutionCount},
-    {ename, "error dude"},
+    {ename, "error"},
     {evalue, "ERROR DUDE"},
-    {traceback, []}
+    {traceback, Traceback}
   ]},
   PyerrContent = mochijson2:encode(Content),
   PyerrContent;
@@ -182,11 +182,19 @@ generate_content_reply(pyerr, {_ExceptionName, ExecutionCount, _ExceptionValue, 
 %% @spec generate_content_reply(atom(), tuple()) -> list()
 %% @doc Creates the content reply for display_data
 %%      sent over the iopub socket.
-generate_content_reply(display_data, {Source, Data, MetaData})->
+generate_content_reply(display_data, {Source, RawData, _MetaData})->
+  % Create the data dictionary with mime types as keys
+  DataStruct = {struct, [
+    {'text/html', RawData},
+    {'text/plain', RawData}
+  ]},
+  Data = mochijson2:encode(DataStruct),
+
+  % Create the content
   Content = {struct,	[
     {source, Source},
     {data, Data},
-    {metadata, MetaData}
+    {metadata, {}}
   ]},
   DisplayContent = mochijson2:encode(Content),
   DisplayContent.
