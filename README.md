@@ -1,10 +1,25 @@
-#Interactive Erlang Notebook
-IErlang is an Erlang language kernel for [IPython.](http://ipython.org) It allows users to use IPython's Notebook frontend, except where IPython executes python code, IErlang can execute erlang code and compile and execute erlang modules.
+<a href="http://imgur.com/7rr6Tbr"><img src="http://i.imgur.com/7rr6Tbr.png" title="IErlang"/></a>
 
-This is on top of all of IPython's other frontend features like Markdown rendering, HTML rendering, saving notebooks for later use and even the ability to view IErlang Notebooks in [IPython's NBViewer](http://nbviewer.ipython.org/)
+#Interactive Erlang Notebook
+IErlang is an Erlang language kernel for [IPython.](http://ipython.org) It allows users
+to use IPython's Notebook frontend, except where IPython executes python code, IErlang
+can execute erlang code and compile and execute erlang modules.
+
+This is on top of all of IPython's other frontend features like Markdown rendering,
+HTML rendering, saving notebooks for later use and even the ability to view IErlang
+Notebooks in [IPython's NBViewer](http://nbviewer.ipython.org/)
 
 ###Disclaimer
-Please note, the development of this language kernel for IPython is at it's very early stages. This is Alpha. Take with a large pinch of salt. No sugar necessary, because it's pretty damn sweet! :)
+Please note, the development of this language kernel for IPython is at it's very early stages.
+This is Alpha. Take with a large pinch of salt. No sugar necessary, because it's pretty damn sweet! :)
+
+###Note
+Please note: in order to use IErlang, it is required to edit one of IPython's files.
+In IPython 2.0.0, this does not affect the usage of the original IPython.
+
+###Feedback
+I am eager to receive [feedback](robbie.lynch@outlook.com) from anyone who has attempted to use IErlang. I would love to hear
+some thoughts on how to improve IErlang.
 
 
 #Demo
@@ -90,10 +105,12 @@ source ~/.bashrc
 
 
 ###6. Edit IPython
-This is not an ideal situation where it's required to edit IPython's code. However, it is a necessary step. But why?
+This is not an ideal situation where it's required to edit IPython's code.
+However, it is a necessary step. But why?
 >>#####Why edit IPython?
 In erlang, strings are represented as lists of integers.
-Therefore, when IPython receives messages from IErlang kernel,  it doesn't know what to do with the lists of integers, so it ends up doing nothing.
+Therefore, when IPython receives messages from IErlang kernel,
+it doesn't know what to do with the lists of integers, so it ends up doing nothing.
 
 >>>Example of erlang string
 ```
@@ -129,7 +146,8 @@ Therefore, when IPython receives messages from IErlang kernel,  it doesn't know 
 
 ###7. Edit the IErlang start up script
 Navigate to `~/ierlang-dev/ierlang/src`
-* Open both files beginning with `start-ierlang-*.sh` and check that the escript location corresponds to the escript location on your machine. Change it if it not correct.
+* Open both files beginning with `start-ierlang-*.sh` and check that the escript
+location corresponds to the escript location on your machine. Change it if it not correct.
 
 
 ###8. Start IErlang
@@ -148,14 +166,28 @@ Navigate to `~/ierlang-dev/ierlang/src`
 
 
 #Known Issues
-* Encoding tuples inside other data structures
+* ~~Encoding tuples inside other data structures~~
 * ~~Encoding floats inside other data structures~~
-* **ERROR MESSAGES** - They do not appear (Something to do with pyerr on ierlang side)
+* ~~**ERROR MESSAGES** - They do not appear (Something to do with pyerr on ierlang side)~~
 * Cannot create notebooks outside ierlang/src directory
 * Horrible installation and setup
 * Having to edit the IPython code in order to parse erlang strings (lists of ints)
     * Note that the editing of the IPython code does not affect the normal IPython in any way.
 * ~~**No Variable bindings** (yet)~~
-* Tuples are converted to lists when encoding
+* ~~Tuples are converted to lists when encoding~~
 * Project structure - it's a mess
 * Not handling all of IPython's messages (yet)
+
+# #TODO
+
+* Create erlang language kernel profile for IPython
+  > Originally I had problems with this, I kept getting errors on startup,
+however I believe this could be fixed by changing the startup process of IErlang.
+Possibly by using shell scripts instead of escript and incorporating ERL_LIBS into the shell script.
+
+* Handle more IPython messasges such as *object_info_request* (module_info in erlang), and the "complete_request"
+* Allow users to create erlang modules outside of src folder
+* Allow users to run IErlang outside of src folder (Maybe the kernel profile could fix this)
+* Refactor the messy code and layout
+* Figure out a solution to pyerr displaying each char on a separate line - temporary solution is to use pyout
+* Remove print strings from IErlang - only output text if debugging is enabled.
