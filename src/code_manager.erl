@@ -52,18 +52,19 @@ execute(Code, Bindings)->
 	    {ok, Tokens, _} = erl_scan:string(Code),
 	    {ok, [Form]} = erl_parse:parse_exprs(Tokens),
 	    {value, Value, NewBindings} = erl_eval:expr(Form, Bindings),
-      case type_of(Value) of
-        %Convert these types to a string due to errors with json encoding
-        pid -> ReturnValue = pid_to_list(Value);
-        bitstring -> ReturnValue = bitstring_to_list(Value); %TODO - Bitstrings like <<1:1>> not working
-        tuple -> ReturnValue = tuple_to_list(Value);
-        _Else -> ReturnValue = Value
-      end,
+      % Convert Value to something printable.
+      % This is required in order to allow all data structures
+      % to be encoded to json
+      ReturnValue = lists:flatten(io_lib:format("~p", [Value])),
       io:format("code execution return value = ~p~n", [ReturnValue]),
 	    {ok, ReturnValue, NewBindings}
 	catch
 	    Exception:Reason ->
-	    {error, Exception, Reason}
+        E = lists:flatten(io_lib:format("~p", [Exception])),
+        R = lists:flatten(io_lib:format("~p", [Reason])),
+        io:format("Exception = ~p~n", [E]),
+        io:format("Reason = ~p~n", [R]),
+	      {error, E, R}
 	end.
 
 
