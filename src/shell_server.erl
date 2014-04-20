@@ -75,7 +75,6 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 			%% Parse the EXECUTE_REQUEST content
 			{ok, Code, _Silent, _StoreHistory, _UserVariables, _UserExpressions, _AllowStdin}
         = message_parser:parse_content(Content, execute_request),
-			%%io:format("[Shell] Executing this code:  ~s~n", [Code]),
 
       %% PYIN
       %send_pyin(IOPubSocket, Code, [MessageID, Session, Username, Header, Date]),
@@ -91,7 +90,6 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           io:format("[Shell] Code Compile Result = ~p~n", [CompileResult]),
 
           %% EXECUTE_REPLY MESSAGE
-          %% reply_type, status, exe_count, payload, user_vars, user_exprs
           io:format("[Shell] Generating execute content reply~n"),
           io:format("[Shell] Value = ~p~n", [CompileResult]),
           ReplyContent = message_builder:generate_content_reply(execute_reply, {"ok", ExeCount, {}, {}}),
@@ -123,6 +121,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 					ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ExecuteReplyHeader, Header, ReplyContent, Metadata),
 					message_sender:send_reply(ReplyList, ShellSocket),
 
+          %%DISPLAY_DATA
+          %message_sender:send(display_data, IOPubSocket, {"username", Value, {}}, [Session, Header, Date]),
+
           %% PYOUT MESSAGE
           message_sender:send_pyout(IOPubSocket, Value, [Session, Header, Date, ExeCount]),
 
@@ -137,29 +138,32 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 
           %% Call Shell Listener again, incrementing the execution count by one.
           shell_listener(ShellSocket, IOPubSocket, ExeCount+1, NewBindings);
-        %% Unsuccessful Code Execution TODO - not working------------------------------------------
+        %% Unsuccessful Code Execution TODO - each char of Traceback being output on separate line
+        %% ---------------------------------------------------------------------------------------
 				{error, Exception, Reason}->
 					io:format("[Shell] Code Execution Exception = ~p~n", [Exception]),
           erlang:display("Building error execute reply"),
 
-          %% PYERR MESSAGE
-          %ExceptionName, ExecutionCount, ExceptionValue, Traceback
-          message_sender:send_pyerr(IOPubSocket, Exception, ExeCount, Reason, [], [Session, Header, Date]),
-
-          %% ERROR EXECUTE_REPLY
+          %% ERROR EXECUTE_REPLY %%TODO - Traceback appears as a list of a million chars :/
+          %% Leaving Traceback param as an empty list for now, and outputting via pyout
           %% reply_type, status, exe_count, excetpionName, ExceptionValue, TracebackList
-          ErrorReplyContent = message_builder:generate_content_reply(execute_reply_error, {"error", ExeCount, Exception, Reason, []}),
+          ErrorReplyContent = message_builder:generate_content_reply(execute_reply_error, {"error", ExeCount, Exception,
+                                                                                           Reason, []}),
           erlang:display("Generated error reply content"),
           ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ExecuteReplyHeader, Header,
                                                 ErrorReplyContent, Metadata),
           erlang:display("Sending execute_reply error"),
           message_sender:send_reply(ReplyList, ShellSocket),
 
+          %% PYERR MESSAGE
+          %% message_sender:send_pyerr(IOPubSocket, Exception, ExeCount, Reason, [Traceback], [Session, Header, Date]),
+
+          %% PYOUT MESSAGE - Using pyout because of issue with pyerr
+          message_sender:send_pyout(IOPubSocket, Reason, [Session, Header, Date, ExeCount]),
+
           %% IDLE STATUS MESSAGE
-          %%io:format("[Shell] Sending IDLE status to IPython ~n"),
           IdleReplyHeader = message_builder:generate_header_reply(Session, "status", Date),
           IdleStatusReplyContent = message_builder:generate_content_reply(idle),
-          %%io:format("[Shell] IDLE Status Reply Content =  ~s~n", [IdleStatusReplyContent]),
           IdleStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, IdleReplyHeader, Header,
                                                         IdleStatusReplyContent, Metadata),
           message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
@@ -175,10 +179,11 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
         {error, Reason} ->
           io:format("[Shell] Error parsing complete_request - ~s~n", [Reason])
       end,
-      shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings);
+      shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings);
     {error, _Username, _Session, _MessageID, _UnexpectedMessageType, _Date} ->
       io:format("[Shell] Received unexpected message - ~s~n", [_UnexpectedMessageType]);
     {error, Reason} ->
       io:format("[Shell] Error occured trying to parse message - ~p~n", [Reason])
 
 	end.
+
