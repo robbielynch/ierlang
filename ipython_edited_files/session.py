@@ -931,9 +931,10 @@ class Session(Configurable):
                 return content
             elif content['status'] == "error":
                 content['execution_count'] = ierl_content['execution_count']
-                content['ename'] = ierl_content['ename']
+                content['ename'] = self.erl_string_to_string(ierl_content['ename'])
                 content['evalue'] = self.erl_string_to_string(ierl_content['evalue'])
-                content['traceback'] = ierl_content['traceback']
+                traceback = self.erl_string_to_string(ierl_content['traceback'])
+                content['traceback'] = traceback.translate(None, "\r")
                 return content
         elif msg_type == "pyout":
             #content = {u'execution_count': 1,
@@ -950,7 +951,12 @@ class Session(Configurable):
             content['execution_count'] = ierl_content['execution_count']
             content['ename'] = self.erl_string_to_string(ierl_content['ename'])
             content['evalue'] = self.erl_string_to_string(ierl_content['evalue'])
-            content['traceback'] = ierl_content['traceback']
+            content['traceback'] = self.erl_string_to_string(ierl_content['traceback'])
+            return content
+        elif msg_type == "display_data":
+            content['source'] = self.erl_string_to_string(ierl_content['source'])
+            content['data'] = self.extract_ierl_data(ierl_content['data'])
+            content['metadata'] = ierl_content['metadata']
             return content
         else:
             return ierl_content
@@ -981,6 +987,7 @@ class Session(Configurable):
                 # Replace all \n with <br />
                 print("Replacing \\n with <br />")
                 text_html_value_as_string = text_html_value_as_string.replace("\n", "<br />")
+                text_html_value_as_string = "<pre>" + text_html_value_as_string + "</pre>"
                 data_dict['text/html'] = text_html_value_as_string
             else:
                 print("is_printable_erlang_string == false")
