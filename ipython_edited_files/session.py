@@ -815,7 +815,7 @@ class Session(Configurable):
             The nested message dict with top-level keys [header, parent_header,
             content, buffers].
         """
-        erlang_debug = True
+        erlang_debug = False
 
         minlen = 5
         message = {}
@@ -850,21 +850,21 @@ class Session(Configurable):
         ##Extract header elements from erlang strings
         ierl_header = extract_dates(header)
         try:
-            ierl_header['username'] = self.erl_string_to_string(ierl_header['username'])
+            ierl_header['username'] = self.erl_string_to_string(ierl_header['username'], erlang_debug)
         except Exception:
             ierl_header['username'] = "not_the_ierlang_kernel"
 
         ##If using the ERLANG_KERNEL then parse the erlang strings
         if ierl_header['username'] == "ierlang_kernel":
-            ierl_header['session'] = self.erl_string_to_string(ierl_header['session'])
-            ierl_header['msg_id'] = self.erl_string_to_string(ierl_header['msg_id'])
-            ierl_header['msg_type'] = self.erl_string_to_string(ierl_header['msg_type'])
+            ierl_header['session'] = self.erl_string_to_string(ierl_header['session'], erlang_debug)
+            ierl_header['msg_id'] = self.erl_string_to_string(ierl_header['msg_id'], erlang_debug)
+            ierl_header['msg_type'] = self.erl_string_to_string(ierl_header['msg_type'], erlang_debug)
             #Build message dict
             message['header'] = ierl_header
-            message['msg_id'] = self.erl_string_to_string(header["msg_id"])
+            message['msg_id'] = self.erl_string_to_string(header["msg_id"], erlang_debug)
             if content:
                 ierl_msg_content = self.unpack(msg_list[4])
-                message['content'] = self.ierlang_content_parser(ierl_msg_content, ierl_header['msg_type'])
+                message['content'] = self.ierlang_content_parser(ierl_msg_content, ierl_header['msg_type'], erlang_debug)
             else:
                 ierl_msg_content = msg_list[4]
                 message['content'] = {}
@@ -884,7 +884,7 @@ class Session(Configurable):
 
     ##IERLANG CODE#####################################################################
     ##THE NEXT 4 FUNCTIONS ARE TO ASSIST WITH THE PARSING OF ERLANG STRINGS
-    def erl_string_to_string(self, erl_string):
+    def erl_string_to_string(self, erl_string, erlang_debug=False):
         """
         This function recursively converts erlang strings
         (i.e. lists of integers/lists of lists of lists of ints etc..).
@@ -910,7 +910,7 @@ class Session(Configurable):
                 string += str(c)
         return string
     ##IERLANG CODE#####################################################################
-    def ierlang_content_parser(self, ierl_content, msg_type):
+    def ierlang_content_parser(self, ierl_content, msg_type, erlang_debug=False):
         """
         Depending on the message type, the content is extracted accordingly.
         """
@@ -944,7 +944,6 @@ class Session(Configurable):
             # u'metadata': {}}
             content['execution_count'] = ierl_content['execution_count']
             content['metadata'] = ierl_content['metadata']
-            print("Erl data before parsing = " + str(ierl_content['data']))
             content['data'] = self.extract_ierl_data(ierl_content['data'])
             return content
         elif msg_type == "pyerr":
@@ -970,45 +969,53 @@ class Session(Configurable):
 
         # Convert data erl string to json string
         original_data_json = self.erl_string_to_string(ierl_data)
-        print("ErlData as string = " + original_data_json)
+        self.ierlang_debug_print(["ErlData as string = " + original_data_json])
 
         # Convert json string to dict
         data_dict = json.loads(original_data_json)
-        print("Converted ierl data json to dict...")
 
         # Convert mime elements to strings
         # so they can be output to the user.
         if data_dict['text/html']:
             if self.is_printable_erlang_string(data_dict['text/html']):
-                print("is_printable_erlang_string == true")
+                self.ierlang_debug_print(["is_printable_erlang_string == true"])
                 text_html_value = data_dict['text/html']
                 text_html_value_as_string = self.erl_string_to_string(text_html_value)
-                print("text html value as string = ", text_html_value_as_string)
+                self.ierlang_debug_print(["text html value as string = " + text_html_value_as_string])
                 # Replace all \n with <br />
-                print("Replacing \\n with <br />")
                 text_html_value_as_string = text_html_value_as_string.replace("\n", "<br />")
+                text_html_value_as_string = text_html_value_as_string.replace("\\n", "<br />")
                 text_html_value_as_string = "<pre>" + text_html_value_as_string + "</pre>"
                 data_dict['text/html'] = text_html_value_as_string
             else:
-                print("is_printable_erlang_string == false")
+                self.ierlang_debug_print(["is_printable_erlang_string == false"])
                 text_html_value = data_dict['text/html']
                 text_html_value_as_string = str(text_html_value)
-                print("text html value as string = ", text_html_value_as_string)
+                self.ierlang_debug_print(["text html value as string = " + text_html_value_as_string])
                 data_dict['text/html'] = text_html_value_as_string
         if data_dict['text/plain']:
             if self.is_printable_erlang_string(data_dict['text/plain']):
-                print("is_printable_erlang_string == true")
+                self.ierlang_debug_print(["is_printable_erlang_string == true"])
                 text_plain_value = data_dict['text/plain']
                 text_plain_value_as_string = self.erl_string_to_string(text_plain_value)
-                print("text plain value as string = ", text_plain_value_as_string)
+                self.ierlang_debug_print(["text plain value as string = " + text_plain_value_as_string])
                 data_dict['text/plain'] = text_plain_value_as_string
             else:
                 print("is_printable_erlang_string == false")
                 text_plain_value = data_dict['text/plain']
                 text_plain_value_as_string = str(text_plain_value)
-                print("text plain value as string = ", text_plain_value_as_string)
+                self.ierlang_debug_print(["text plain value as string = " + text_plain_value_as_string])
                 data_dict['text/plain'] = text_plain_value_as_string
         return data_dict
+
+    def ierlang_debug_print(self, things_to_print, erlang_debug=False):
+        if erlang_debug:
+            for i in things_to_print:
+                if isinstance(i, str):
+                    print(i)
+                else:
+                    print(str(i))
+
     ##IERLANG CODE#####################################################################
     def is_printable_erlang_string(self, data):
         """
