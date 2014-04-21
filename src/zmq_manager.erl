@@ -1,15 +1,15 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
 %%% @copyright (C) 2014, <COMPANY>
-%%% @doc
+%%% @doc Set up all the ZMQ sockets and bindings, also spawns the servers
+%%%      that handle the messaging. Once this is done it goes into an
+%%%      infinite empty loop to keep IErlang process alive.
 %%%
 %%% @end
 %%% Created : 03. Apr 2014 11:51
 %%%-------------------------------------------------------------------
 -module (zmq_manager).
 -author("Robbie Lynch").
-
-%% API
 -export([run/1]).
 
 %% @doc Function that creates and binds all zmq sockets. Starts the heartbeat, shell and control servers.

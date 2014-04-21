@@ -1,15 +1,13 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
 %%% @copyright (C) 2014, <COMPANY>
-%%% @doc
+%%% @doc This module sends messages to IPython frontend using ZMQ
 %%%
 %%% @end
 %%% Created : 03. Apr 2014 11:30
 %%%-------------------------------------------------------------------
 -module(message_sender).
 -author("Robbie Lynch").
-
-%% API
 -export([send/4,send_pyout/3,send_pyin/3, send_pyerr/6, send_reply/2]).
 
 send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
@@ -29,8 +27,8 @@ send_pyin(IOPubSocket, CodeInput, [Session, IPythonHeader, Date])->
   PyinContentReply = message_builder:generate_content_reply(pyin, {CodeInput, 1}),
   PyinReplyList = message_builder:msg_parts_to_ipython_msg(Session,
                                 ReplyHeader, IPythonHeader, PyinContentReply, Metadata),
-  %%io:format("[IOPub] Sending Pyin... ~n"),
   send_reply(PyinReplyList, IOPubSocket).
+
 send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
     Traceback, [Session, IPythonHeader, Date])->
   %%Build and send pyin reply
@@ -40,16 +38,23 @@ send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
                                           ExecutionCount, ExceptionVal, Traceback}),
   PyerrReplyList = message_builder:msg_parts_to_ipython_msg(Session,
                             ReplyHeader, IPythonHeader, PyerrContentReply, Metadata),
-  %%io:format("[IOPub] Sending Pyin... ~n"),
   send_reply(PyerrReplyList, IOPubSocket).
 
-%%%%%display_data, IOPubSocket, {"username", Value, {}}, [Session, Header, Date]
 send(display_data, IOPubSocket, {Source, RawData, Metadata}, [Session, IPythonHeader, Date])->
   ReplyHeader = message_builder:generate_header_reply(Session, "display_data", Date),
   DisplayDataContentReply = message_builder:generate_content_reply(display_data, {Source, RawData, Metadata}),
   DisplayDataReplyList = message_builder:msg_parts_to_ipython_msg(Session,
                               ReplyHeader, IPythonHeader, DisplayDataContentReply, Metadata),
-  send_reply(DisplayDataReplyList, IOPubSocket).
+  send_reply(DisplayDataReplyList, IOPubSocket);
+
+send(kernel_info_reply, ShellSocket, {}, [Session, Header, Date])->
+  ReplyHeader = message_builder:generate_header_reply(Session, "kernel_info_reply", Date),
+  ReplyContent = message_builder:generate_content_reply(kernel_info_reply),
+  Metadata = message_builder:create_metadata(),
+  ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ReplyHeader,
+    Header, ReplyContent, Metadata),
+  % SendReply
+  message_sender:send_reply(ReplyList, ShellSocket).
 
 
 send_reply([UUIDs, Delim, HMAC, Header, ParentHeader, Metadata, Content], Socket)->

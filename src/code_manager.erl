@@ -1,11 +1,20 @@
+%%%-------------------------------------------------------------------
+%%% @author Robbie Lynch <robbie.lynch@outlook.com>
+%%% @copyright (C) 2014, <COMPANY>
+%%% @doc The code manager handles execution of erlang code and
+%%%      compilation of erlang modules.
+%%%
+%%% @end
+%%% Created : 31. Mar 2014 10:02
+%%%-------------------------------------------------------------------
 -module (code_manager).
 -export ([module_or_expression/2]).
+-define(DEBUG, false).
 
 %% @spec module_or_expression(list(), list()) -> tuple()
 %% @doc Determines whether the incoming code is a module that is to be compiled
 %%      or an erlang expression to be executed.
 module_or_expression([$-,$m,$o,$d,$u,$l,$e,$(|RestOfCode], _Bindings)->
-  erlang:display("In module or expression"),
   % If code is a module, do the following steps:
   % 1. Get module name.
   % 2. Save code to file
@@ -14,19 +23,19 @@ module_or_expression([$-,$m,$o,$d,$u,$l,$e,$(|RestOfCode], _Bindings)->
 
   % 1. Get module name
   ModuleName = get_module_name_from_code(RestOfCode),
-  erlang:display(ModuleName),
+  print(ModuleName),
 
   % 2. Save file in some folder TODO - Make separate folder for modules
   FullCode = lists:append("-module(", RestOfCode),
   FileName = lists:append(ModuleName, ".erl"),
   {ok, IODevice} = file:open(FileName, [write]), file:write(IODevice, FullCode), file:close(IODevice),
 
-  erlang:display("Trying to compile module"),
+  print("Trying to compile module"),
   % 3 + 4. Compile Module, Capture Result and Return
   CompileResult = os:cmd(lists:append("erlc ", FileName)),
-  erlang:display("Trying to compile module"),
-  erlang:display("Type of compileresult = "),
-  erlang:display(type_of(CompileResult)),
+  print("Trying to compile module"),
+  print("Type of compileresult = "),
+  print(type_of(CompileResult)),
   {ok,CompileResult};
 module_or_expression([$;,$;|Code], _Bindings)->
   OsCmd1 = string:concat("os:cmd(\"", Code),
@@ -56,14 +65,14 @@ execute(Code, Bindings)->
       % This is required in order to allow all data structures
       % to be encoded to json
       ReturnValue = lists:flatten(io_lib:format("~p", [Value])),
-      io:format("code execution return value = ~p~n", [ReturnValue]),
+      print("code execution return value = ", [ReturnValue]),
 	    {ok, ReturnValue, NewBindings}
 	catch
 	    Exception:Reason ->
         E = lists:flatten(io_lib:format("~p", [Exception])),
         R = lists:flatten(io_lib:format("~p", [Reason])),
-        io:format("Exception = ~p~n", [E]),
-        io:format("Reason = ~p~n", [R]),
+        print("Exception = ", [E]),
+        print("Reason = ", [R]),
 	      {error, E, R}
 	end.
 
@@ -82,3 +91,17 @@ type_of(X) when is_reference(X) -> reference;
 type_of(X) when is_atom(X)      -> atom;
 
 type_of(_X)                     -> unknown.
+
+
+
+%% @doc Function to print stuff if debugging is set to true
+print(Stuff)->
+  case ?DEBUG of
+    true ->  io:format("~p~n", [Stuff]);
+    _Else -> "Do nothing"
+  end.
+print(Prompt, Stuff)->
+  case ?DEBUG of
+    true ->  io:format(string:concat(Prompt, "~p~n"), [Stuff]);
+    _Else -> "Do nothing"
+  end.

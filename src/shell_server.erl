@@ -1,18 +1,20 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
 %%% @copyright (C) 2014, <COMPANY>
-%%% @doc
+%%% @doc The Shell Server handles the most important messages received
+%%%      from IPython.
 %%%
 %%% @end
 %%% Created : 03. Apr 2014 11:51
 %%%-------------------------------------------------------------------
 -module (shell_server).
 -author("Robbie Lynch").
-
-%% API
 -export ([start/2]).
 
+-define(DEBUG, false).
 
+
+%%% @doc Starts the shell server
 start(ShellSocket, IOPubSocket) ->
     ExeCount = 1,
     loop(ShellSocket, IOPubSocket, ExeCount).
@@ -22,41 +24,31 @@ loop(ShellSocket, IOPubSocket, ExeCount) ->
    loop(ShellSocket, IOPubSocket, ExeCount).
 
 
-%% Shell Socket - This interacts with iPython
-%% The shell listener listens for messages from 
-%% IPython. Parses the message and determines
-%% what IPython wants us to do next.
+%%% @doc Listens for messages on the Shell Socket, parses and
+%%%      acts upon the message contents, then replies to IPython
 shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
-	io:format("in shell listener~n"),
-	%%%io:format("[Shell] In shell_listener ~n"),
+	print("in shell listener"),
 	{ok, UUID} = erlzmq:recv(ShellSocket),
-	io:format("[Shell] Received UUID  ~s~n", [UUID]),
+	print("[Shell] Received UUID ",[UUID]),
 	{ok, Delim} = erlzmq:recv(ShellSocket),
-	io:format("[Shell] Received Delim ~s~n", [Delim]),
+	print("[Shell] Received Delim ", [Delim]),
 	{ok, Hmac} = erlzmq:recv(ShellSocket),
-	io:format("[Shell] Received HMAC ~s~n", [Hmac]),
+	print("[Shell] Received HMAC ", [Hmac]),
 	{ok, Header} = erlzmq:recv(ShellSocket),
-	io:format("[Shell] Received Header  ~s~n", [Header]),
+	print("[Shell] Received Header ", [Header]),
 	{ok, ParentHeader} = erlzmq:recv(ShellSocket),
-	io:format("[Shell] Received ParentHeader ~s~n", [ParentHeader]),
+	print("[Shell] Received ParentHeader ", [ParentHeader]),
 	{ok, Metadata} = erlzmq:recv(ShellSocket),
-	io:format("[Shell] Received Metadata ~s~n", [Metadata]),
+	print("[Shell] Received Metadata ", [Metadata]),
 	{ok, Content} = erlzmq:recv(ShellSocket),
-	io:format("[Shell] Received Content ~s~n~n", [Content]),
+	print("[Shell] Received Content ", [Content]),
 
 	case message_parser:parse_header([Header]) of
 		%% KERNEL_INFO_REQUEST
 		%% IPython requests information about the kernel.
 		%% python version, language name, messaging version, ipython version
 		{ok, _Username, Session, _MessageID, "kernel_info_request", Date}->
-			ReplyHeader = message_builder:generate_header_reply(Session, "kernel_info_reply", Date),
-			ReplyContent = message_builder:generate_content_reply(kernel_info_reply),
-			Metadata = message_builder:create_metadata(),
-			ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ReplyHeader,
-                                           Header, ReplyContent, Metadata),
-			% SendReply
-			message_sender:send_reply(ReplyList, ShellSocket);
-
+      message_sender:send(kernel_info_reply, ShellSocket, {}, [Session,Header,Date]);
 		%% EXECUTE_REQUEST
 		{ok, _Username, Session, _MessageID, "execute_request", Date}->
 			%%EXECUTE_REPLY
@@ -64,10 +56,8 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 			Metadata = message_builder:create_metadata(),
 
 			%% BUSY STATUS MESSAGE
-			%%io:format("[Shell] Sending busy status to IPython ~n"),
 			BusyReplyHeader = message_builder:generate_header_reply(Session, "status", Date),
 			BusyStatusReplyContent = message_builder:generate_content_reply(busy),
-			%%io:format("[Shell] Busy Status Reply Content =  ~s~n", [BusyStatusReplyContent]),
 			BusyStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, BusyReplyHeader,
                                                 Header, BusyStatusReplyContent, Metadata),
 			message_sender:send_reply(BusyStatusReplyList, IOPubSocket),
@@ -87,11 +77,11 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
             [] -> CompileResult = "Successfully Compiled";
             CompileMessage -> CompileResult = CompileMessage
           end,
-          io:format("[Shell] Code Compile Result = ~p~n", [CompileResult]),
+          print("[Shell] Code Compile Result = ", [CompileResult]),
 
           %% EXECUTE_REPLY MESSAGE
-          io:format("[Shell] Generating execute content reply~n"),
-          io:format("[Shell] Value = ~p~n", [CompileResult]),
+          print("[Shell] Generating execute content reply"),
+          print("[Shell] Value = ", [CompileResult]),
           ReplyContent = message_builder:generate_content_reply(execute_reply, {"ok", ExeCount, {}, {}}),
           ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ExecuteReplyHeader, Header, ReplyContent, Metadata),
           message_sender:send_reply(ReplyList, ShellSocket),
@@ -100,10 +90,8 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           message_sender:send_pyout(IOPubSocket, CompileResult, [Session, Header, Date, ExeCount]),
 
           %% IDLE STATUS MESSAGE
-          %%io:format("[Shell] Sending IDLE status to IPython ~n"),
           IdleReplyHeader = message_builder:generate_header_reply(Session, "status", Date),
           IdleStatusReplyContent = message_builder:generate_content_reply(idle),
-          %%io:format("[Shell] IDLE Status Reply Content =  ~s~n", [IdleStatusReplyContent]),
           IdleStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, IdleReplyHeader, Header,
             IdleStatusReplyContent, Metadata),
           message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
@@ -112,11 +100,11 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings);
         %% Successful Code Execution----------------------------------------------------------------
 				{ok, Value, NewBindings}->
-					io:format("[Shell] Code Execution Result = ~p~n", [Value]),
+					print("[Shell] Code Execution Result = ", [Value]),
 
 					%% EXECUTE_REPLY MESSAGE
-          io:format("[Shell] Generating execute content reply~n"),
-          io:format("[Shell] Value = ~p~n", [Value]),
+          print("[Shell] Generating execute content reply"),
+          print("[Shell] Value = ", [Value]),
 					ReplyContent = message_builder:generate_content_reply(execute_reply, {"ok", ExeCount, {}, {}}),
 					ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ExecuteReplyHeader, Header, ReplyContent, Metadata),
 					message_sender:send_reply(ReplyList, ShellSocket),
@@ -128,10 +116,8 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           message_sender:send_pyout(IOPubSocket, Value, [Session, Header, Date, ExeCount]),
 
 					%% IDLE STATUS MESSAGE
-					%%io:format("[Shell] Sending IDLE status to IPython ~n"),
 					IdleReplyHeader = message_builder:generate_header_reply(Session, "status", Date),
 					IdleStatusReplyContent = message_builder:generate_content_reply(idle),
-					%%io:format("[Shell] IDLE Status Reply Content =  ~s~n", [IdleStatusReplyContent]),
 					IdleStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, IdleReplyHeader, Header,
                                                           IdleStatusReplyContent, Metadata),
 					message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
@@ -141,18 +127,18 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
         %% Unsuccessful Code Execution TODO - each char of Traceback being output on separate line
         %% ---------------------------------------------------------------------------------------
 				{error, Exception, Reason}->
-					io:format("[Shell] Code Execution Exception = ~p~n", [Exception]),
-          erlang:display("Building error execute reply"),
+					print("[Shell] Code Execution Exception = ", [Exception]),
+          print("Building error execute reply"),
 
           %% ERROR EXECUTE_REPLY %%TODO - Traceback appears as a list of a million chars :/
           %% Leaving Traceback param as an empty list for now, and outputting via pyout
           %% reply_type, status, exe_count, excetpionName, ExceptionValue, TracebackList
           ErrorReplyContent = message_builder:generate_content_reply(execute_reply_error, {"error", ExeCount, Exception,
                                                                                            Reason, []}),
-          erlang:display("Generated error reply content"),
+          print("Generated error reply content"),
           ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ExecuteReplyHeader, Header,
                                                 ErrorReplyContent, Metadata),
-          erlang:display("Sending execute_reply error"),
+          print("Sending execute_reply error"),
           message_sender:send_reply(ReplyList, ShellSocket),
 
           %% PYERR MESSAGE
@@ -171,19 +157,31 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 			end;
     %%COMPLETE_REQUEST
     {ok, _Username, _Session, _MessageID, "complete_request", _Date}->
-      io:format("[Shell] Received complete_request message"),
+      print("[Shell] Received complete_request message"),
       case message_parser:parse_content(Content, complete_request) of
         %%TODO - do something with complete_request
         {ok, _Text, _Line, _Block, _CursorPos} ->
           io:format("TODO");
         {error, Reason} ->
-          io:format("[Shell] Error parsing complete_request - ~s~n", [Reason])
+          print("[Shell] Error parsing complete_request - ", [Reason])
       end,
       shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings);
     {error, _Username, _Session, _MessageID, _UnexpectedMessageType, _Date} ->
-      io:format("[Shell] Received unexpected message - ~s~n", [_UnexpectedMessageType]);
+      print("[Shell] Received unexpected message - " + [_UnexpectedMessageType]);
     {error, Reason} ->
-      io:format("[Shell] Error occured trying to parse message - ~p~n", [Reason])
+      print("[Shell] Error occured trying to parse message - ", [Reason])
 
 	end.
+
+%% @doc Function to print stuff if debugging is set to true
+print(Stuff)->
+  case ?DEBUG of
+    true ->  io:format("~p~n", [Stuff]);
+    _Else -> "Do nothing"
+  end.
+print(Prompt, Stuff)->
+  case ?DEBUG of
+    true ->  io:format(string:concat(Prompt, "~p~n"), [Stuff]);
+    _Else -> "Do nothing"
+  end.
 

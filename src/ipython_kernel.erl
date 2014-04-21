@@ -1,6 +1,8 @@
 #!escript
 
-%%
+%%% @author Robbie Lynch <robbie.lynch@outlook.com>
+%%% @doc Starts all servers to handle messages, parses the json configuration file.
+
 %% Receives a list of arguments from IPython.
 %% The list contains the absolute path to the kernel.json file.
 %% The kernel.json file contains:
@@ -13,37 +15,46 @@
 %% 		shell_port: 52246, 
 %% 		transport: "tcp", 
 %% 		iopub_port: 52247
-%%
 
+
+%% @doc The main function is automatically called upon script execution
+%%      Handles
 main([JsonFile|_]) ->
   io:format("[ERLANG KERNEL]~n"),
-  % lists:foreach(fun(Arg) -> io:format("Got argument: ~p~n", [Arg]) end,Args).
-  %file:write_file("erlang_kernel_log.txt", "hello from erlang kernel\n", [append]),
   erlang:display(JsonFile),
-  % Load file
+  %% Read json file
   {ok, _File} = file:read_file(JsonFile),
-  % Read all lines in the file to get its content.
   JsonContent = readlines(JsonFile),
-  % mochijson2:decode and extract the proplists from the Json string
-  {struct, JsonData} = mochijson2:decode(JsonContent),
-  % Extract each variable from the proplists
-  StdInPort = proplists:get_value(<<"stdin_port">>, JsonData),
-  IP = proplists:get_value(<<"ip">>, JsonData),
-  ControlPort = proplists:get_value(<<"control_port">>, JsonData),
-  HbPort = proplists:get_value(<<"hb_port">>, JsonData),
-  SignatureScheme = proplists:get_value(<<"signature_scheme">>, JsonData),
-  Key = proplists:get_value(<<"key">>, JsonData),
-  ShellPort = proplists:get_value(<<"shell_port">>, JsonData),
-  Transport = proplists:get_value(<<"transport">>, JsonData),
-  IOPubPort = proplists:get_value(<<"iopub_port">>, JsonData),
-  % Output everything that's been extracted from the proplists
-  IPythonInfoList = [StdInPort, IP, ControlPort, HbPort, SignatureScheme, Key, ShellPort, Transport, IOPubPort],
-  erlang:display(IPythonInfoList),
-  erlang:display(IP),
-  % Start the zmq poller - which creates and binds all sockets.
-  % The zmq poller constantly listens on these ports.
-  zmq_manager:run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort},
-             {iopubport, IOPubPort}, {stdinport, StdInPort}, {ip, IP}, {transport, Transport}]).
+  case parse_json_file(JsonContent) of
+    {ok, StdInPort, IP, ControlPort, HbPort, _SignatureScheme, _Key, ShellPort, Transport, IOPubPort}->
+      % Start the zmq manager - which creates and binds all sockets.
+      % The zmq manager starts all necessary servers to handle messaging
+      zmq_manager:run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort},
+        {iopubport, IOPubPort}, {stdinport, StdInPort}, {ip, IP}, {transport, Transport}]);
+    {error, Execption, Reason}->
+      io:format("[ERLANG KERNEL] ERROR STARTING ERLANG KERNEL - ~p~p~n", [Execption,Reason])
+  end.
+
+%%% @doc Parses the IPython configuration file and extracts all necessary information.
+parse_json_file(Json)->
+  try
+    {struct, JsonData} = mochijson2:decode(Json),
+    StdInPort = proplists:get_value(<<"stdin_port">>, JsonData),
+    IP = proplists:get_value(<<"ip">>, JsonData),
+    ControlPort = proplists:get_value(<<"control_port">>, JsonData),
+    HbPort = proplists:get_value(<<"hb_port">>, JsonData),
+    SignatureScheme = proplists:get_value(<<"signature_scheme">>, JsonData),
+    Key = proplists:get_value(<<"key">>, JsonData),
+    ShellPort = proplists:get_value(<<"shell_port">>, JsonData),
+    Transport = proplists:get_value(<<"transport">>, JsonData),
+    IOPubPort = proplists:get_value(<<"iopub_port">>, JsonData),
+    {ok, StdInPort, IP, ControlPort, HbPort, SignatureScheme, Key, ShellPort, Transport, IOPubPort}
+  catch
+    Exception:Reason ->
+      E = io_lib:format("~p", [Exception]),
+      R = io_lib:format("~p", [Reason]),
+      {error, E, R}
+  end.
 
 readlines(FileName) ->
   {ok, Device} = file:open(FileName, [read]),

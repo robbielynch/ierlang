@@ -1,18 +1,19 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
 %%% @copyright (C) 2014, <COMPANY>
-%%% @doc
+%%% @doc Module that contains the functions to create replies to
+%%%      IPython messages.
 %%%
 %%% @end
 %%% Created : 03. Apr 2014 10:51
 %%%-------------------------------------------------------------------
 -module(message_builder).
 -author("Robbie Lynch").
-
-%% API
 -export([generate_content_reply/2, generate_content_reply/1,
          msg_parts_to_ipython_msg/5, create_metadata/0,
         generate_header_reply/3]).
+-define(DEBUG, false).
+
 
 %% @spec msg_parts_to_list_of_binary_msg_parts(list(), list(), binary(), list(), list()) -> list()
 %% @doc Function to convert all message parts to binary before and place them
@@ -110,7 +111,6 @@ generate_content_reply(kernel_info_reply)->
 %% @doc Creates the content reply for a successful execute_reply
 %%      sent over the shell socket.
 generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExprs})->
-  %%io:format("payload = ~s~n", [Payload]),
   Content = {struct,	[
     {status, "ok"},
     {execution_count, ExecutionCount},
@@ -125,8 +125,7 @@ generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExp
 %% @doc Creates the content reply for an unsuccessful execute_reply
 %%      sent over the shell socket.
 generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionName, _ExceptionValue, Traceback})->
-  %%io:format("payload = ~s~n", [Payload]),
-  erlang:display("in generate_content_reply for execute reply error"),
+  print("in generate_content_reply for execute reply error"),
   Content = {struct,	[
     {status, "error"},
     {execution_count, ExecutionCount},
@@ -134,7 +133,7 @@ generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionN
     {evalue, "ERROR DUDE"},
     {traceback, Traceback}
   ]},
-  erlang:display("converting to json"),
+  print("converting to json"),
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
@@ -205,3 +204,15 @@ create_metadata()->
   Metadata = {struct,	[]},
   Md = mochijson2:encode(Metadata),
   Md.
+
+%% @doc Function to print stuff if debugging is set to true
+print(Stuff)->
+  case ?DEBUG of
+    true ->  io:format("~p~n", [Stuff]);
+    _Else -> "Do nothing"
+  end.
+print(Prompt, Stuff)->
+  case ?DEBUG of
+    true ->  io:format(string:concat(Prompt, "~p~n"), [Stuff]);
+    _Else -> "Do nothing"
+  end.
