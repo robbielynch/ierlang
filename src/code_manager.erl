@@ -64,7 +64,10 @@ execute(Code, Bindings)->
       % Convert Value to something printable.
       % This is required in order to allow all data structures
       % to be encoded to json
-      ReturnValue = lists:flatten(io_lib:format("~p", [Value])),
+      case type_of(Value) of
+        list -> ReturnValue = Value;
+        _Else -> ReturnValue = lists:flatten(io_lib:format("~p", [Value]))
+      end,
       print("code execution return value = ", [ReturnValue]),
 	    {ok, ReturnValue, NewBindings}
 	catch

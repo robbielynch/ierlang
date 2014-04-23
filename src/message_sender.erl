@@ -9,10 +9,15 @@
 -module(message_sender).
 -author("Robbie Lynch").
 -export([send/4,send_pyout/3,send_pyin/3, send_pyerr/6, send_reply/2]).
+-define(PYOUT, "pyout").
+-define(PYIN, "pyin").
+-define(PYERR, "pyerr").
+-define(DISPLAY_DATA, "display_data").
+-define(KERNEL_INFO_REPLY, "kernel_info_reply").
 
 send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
   %%Build and send Pyout reply
-  ReplyHeader = message_builder:generate_header_reply(Session, "pyout", Date),
+  ReplyHeader = message_builder:generate_header_reply(Session, ?PYOUT, Date),
   Metadata = message_builder:create_metadata(),
   PyoutContentReply = message_builder:generate_content_reply(pyout, {ExeCount, CodeOutput}),
   PyoutReplyList = message_builder:msg_parts_to_ipython_msg(Session,
@@ -22,7 +27,7 @@ send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
 
 send_pyin(IOPubSocket, CodeInput, [Session, IPythonHeader, Date])->
   %%Build and send pyin reply
-  ReplyHeader = message_builder:generate_header_reply(Session, "pyin", Date),
+  ReplyHeader = message_builder:generate_header_reply(Session, ?PYIN, Date),
   Metadata = message_builder:create_metadata(),
   PyinContentReply = message_builder:generate_content_reply(pyin, {CodeInput, 1}),
   PyinReplyList = message_builder:msg_parts_to_ipython_msg(Session,
@@ -32,7 +37,7 @@ send_pyin(IOPubSocket, CodeInput, [Session, IPythonHeader, Date])->
 send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
     Traceback, [Session, IPythonHeader, Date])->
   %%Build and send pyin reply
-  ReplyHeader = message_builder:generate_header_reply(Session, "pyerr", Date),
+  ReplyHeader = message_builder:generate_header_reply(Session, ?PYERR, Date),
   Metadata = message_builder:create_metadata(),
   PyerrContentReply = message_builder:generate_content_reply(pyerr, {ExceptionName,
                                           ExecutionCount, ExceptionVal, Traceback}),
@@ -41,14 +46,14 @@ send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
   send_reply(PyerrReplyList, IOPubSocket).
 
 send(display_data, IOPubSocket, {Source, RawData, Metadata}, [Session, IPythonHeader, Date])->
-  ReplyHeader = message_builder:generate_header_reply(Session, "display_data", Date),
+  ReplyHeader = message_builder:generate_header_reply(Session, ?DISPLAY_DATA, Date),
   DisplayDataContentReply = message_builder:generate_content_reply(display_data, {Source, RawData, Metadata}),
   DisplayDataReplyList = message_builder:msg_parts_to_ipython_msg(Session,
                               ReplyHeader, IPythonHeader, DisplayDataContentReply, Metadata),
   send_reply(DisplayDataReplyList, IOPubSocket);
 
 send(kernel_info_reply, ShellSocket, {}, [Session, Header, Date])->
-  ReplyHeader = message_builder:generate_header_reply(Session, "kernel_info_reply", Date),
+  ReplyHeader = message_builder:generate_header_reply(Session, ?KERNEL_INFO_REPLY, Date),
   ReplyContent = message_builder:generate_content_reply(kernel_info_reply),
   Metadata = message_builder:create_metadata(),
   ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ReplyHeader,

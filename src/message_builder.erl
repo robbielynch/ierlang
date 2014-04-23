@@ -13,6 +13,12 @@
          msg_parts_to_ipython_msg/5, create_metadata/0,
         generate_header_reply/3]).
 -define(DEBUG, false).
+-define(USERNAME, "ierlang_kernel").
+-define(IDLE_STATUS, "idle").
+-define(BUSY_STATUS, "busy").
+-define(STARTING_STATUS, "starting").
+-define(OK_STATUS, "ok").
+-define(ERROR_STATUS, "error").
 
 
 %% @spec msg_parts_to_list_of_binary_msg_parts(list(), list(), binary(), list(), list()) -> list()
@@ -34,7 +40,7 @@ msg_parts_to_ipython_msg(Session, KernelHeader, ParentHeader, Content, _Metadata
 generate_header_reply(Session, MessageType, Date)->
   HeaderPropList = {struct,	[
     {date, Date},
-    {username, "ierlang_kernel"},
+    {username, ?USERNAME},
     {session, Session},
     {msg_id, uuid:to_string(uuid:v4())},
     {msg_type, MessageType}
@@ -48,7 +54,7 @@ generate_header_reply(Session, MessageType, Date)->
 %%      iopub socket.
 generate_content_reply(busy)->
   %%Should be sent before the execution of the code
-  Content = {struct,	[ 	{execution_state, "busy"}	]},
+  Content = {struct,	[ 	{execution_state, ?BUSY_STATUS}	]},
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
@@ -56,7 +62,7 @@ generate_content_reply(busy)->
 %% @doc Creates the content reply for the idle status sent over the
 %%      iopub socket.
 generate_content_reply(idle)->
-  Content = {struct,	[ 	{execution_state, "idle"}	]},
+  Content = {struct,	[ 	{execution_state, ?IDLE_STATUS}	]},
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
@@ -64,7 +70,7 @@ generate_content_reply(idle)->
 %% @doc Creates the content reply for the starting status sent over the
 %%      iopub socket.
 generate_content_reply(starting)->
-  Content = {struct,	[ 	{execution_state, "starting"}	]},
+  Content = {struct,	[ 	{execution_state, ?STARTING_STATUS}	]},
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
@@ -112,7 +118,7 @@ generate_content_reply(kernel_info_reply)->
 %%      sent over the shell socket.
 generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExprs})->
   Content = {struct,	[
-    {status, "ok"},
+    {status, ?OK_STATUS},
     {execution_count, ExecutionCount},
     {payload, []},
     {user_variables, {}},
@@ -127,7 +133,7 @@ generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExp
 generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionName, _ExceptionValue, Traceback})->
   print("in generate_content_reply for execute reply error"),
   Content = {struct,	[
-    {status, "error"},
+    {status, ?ERROR_STATUS},
     {execution_count, ExecutionCount},
     {ename, ExceptionName},
     {evalue, "ERROR DUDE"},
