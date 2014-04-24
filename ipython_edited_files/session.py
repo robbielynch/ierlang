@@ -114,11 +114,11 @@ session_flags  = {
 
 def default_secure(cfg):
     """Set the default behavior for a config environment to be secure.
-    
+
     If Session.key/keyfile have not been set, set Session.key to
     a new random UUID.
     """
-    
+
     if 'Session' in cfg:
         if 'key' in cfg.Session or 'keyfile' in cfg.Session:
             return
@@ -306,7 +306,7 @@ class Session(Configurable):
         help="""Metadata dictionary, which serves as the default top-level metadata dict for each message.""")
 
     # message signature related traits:
-    
+
     key = CBytes(b'', config=True,
         help="""execution key, for extra authentication.""")
     def _key_changed(self, name, old, new):
@@ -314,7 +314,7 @@ class Session(Configurable):
             self.auth = hmac.HMAC(new, digestmod=self.digest_mod)
         else:
             self.auth = None
-    
+
     signature_scheme = Unicode('hmac-sha256', config=True,
         help="""The digest scheme used to construct the message signatures.
         Must have the form 'hmac-HASH'.""")
@@ -326,17 +326,17 @@ class Session(Configurable):
             self.digest_mod = getattr(hashlib, hash_name)
         except AttributeError:
             raise TraitError("hashlib has no such attribute: %s" % hash_name)
-    
+
     digest_mod = Any()
     def _digest_mod_default(self):
         return hashlib.sha256
-    
+
     auth = Instance(hmac.HMAC)
-    
+
     digest_history = Set()
     digest_history_size = Integer(2**16, config=True,
         help="""The maximum number of digests to remember.
-        
+
         The digest history will be culled when it exceeds this value.
         """
     )
@@ -349,9 +349,9 @@ class Session(Configurable):
 
     # for protecting against sends from forks
     pid = Integer()
-    
+
     # serialization traits:
-    
+
     pack = Any(default_packer) # the actual packer function
     def _pack_changed(self, name, old, new):
         if not callable(new):
@@ -362,7 +362,7 @@ class Session(Configurable):
         # unpacker is not checked - it is assumed to be
         if not callable(new):
             raise TypeError("unpacker must be callable, not %s"%type(new))
-    
+
     # thresholds:
     copy_threshold = Integer(2**16, config=True,
         help="Threshold (in bytes) beyond which a buffer should be sent without copying.")
@@ -374,7 +374,7 @@ class Session(Configurable):
         """
     )
 
-    
+
     def __init__(self, **kwargs):
         """create a Session object
 
@@ -566,14 +566,6 @@ class Session(Configurable):
         signature = self.sign(real_message)
         to_send.append(signature)
 
-
-        # #Robcode
-        # print("\n")
-        # print("[Robbie2 IPythonNB] Sending message to kernel....")
-        # for i in msg:
-        #     print("[Robbie2 IPythonNB] Sending:", i)
-        # print("\n")
-
         to_send.extend(real_message)
 
         return to_send
@@ -616,7 +608,7 @@ class Session(Configurable):
         track : bool
             Whether to track.  Only for use with Sockets, because ZMQStream
             objects cannot track messages.
-            
+
 
         Returns
         -------
@@ -644,13 +636,6 @@ class Session(Configurable):
         longest = max([ len(s) for s in to_send ])
         copy = (longest < self.copy_threshold)
 
-        # #Robcode
-        # print("\n")
-        # print("[Robbie2 IPythonNB] Sending message to kernel....")
-        # for i in to_send:
-        #     print("[Robbie2 IPythonNB] Sending:", i)
-        # print("\n")
-        
         if buffers and track and not copy:
             # only really track when we are doing zero-copy buffers
             tracker = stream.send_multipart(to_send, copy=False, track=True)
@@ -771,15 +756,15 @@ class Session(Configurable):
         if self.digest_history_size == 0:
             # no history, never add digests
             return
-        
+
         self.digest_history.add(signature)
         if len(self.digest_history) > self.digest_history_size:
             # threshold reached, cull 10%
             self._cull_digest_history()
-    
+
     def _cull_digest_history(self):
         """cull the digest history
-        
+
         Removes a randomly selected 10% of the digest history
         """
         current = len(self.digest_history)
@@ -789,7 +774,7 @@ class Session(Configurable):
             return
         to_cull = random.sample(self.digest_history, n_to_cull)
         self.digest_history.difference_update(to_cull)
-    
+
     def unserialize(self, msg_list, content=True, copy=True):
         """Unserialize a msg_list to a nested message dict.
 
@@ -1001,7 +986,7 @@ class Session(Configurable):
                 self.ierlang_debug_print(["text plain value as string = " + text_plain_value_as_string])
                 data_dict['text/plain'] = text_plain_value_as_string
             else:
-                print("is_printable_erlang_string == false")
+                self.ierlang_debug_print(["is_printable_erlang_string == false"])
                 text_plain_value = data_dict['text/plain']
                 text_plain_value_as_string = str(text_plain_value)
                 self.ierlang_debug_print(["text plain value as string = " + text_plain_value_as_string])
