@@ -23,13 +23,13 @@
 -define(SUCCESS_MSG, "Successfully Compiled").
 
 -record(reply_message, {
-  uuid,
-  delim = <<"<IDS|MSG>">>,
-  hmac =  <<"">>,
-  header,
-  parent_header,
-  metadata = <<"{}">>,
-  content
+  uuid,                       % uuid
+  delim = <<"<IDS|MSG>">>,    % Delimiter
+  hmac =  <<"">>,             % HMAC
+  header,                     % Serialized header
+  parent_header,              % Serialized parent_header
+  metadata = <<"{}">>,        % Serialized metadata
+  content                     % Serialized content
 }).
 
 
@@ -63,10 +63,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 	print("[Shell] Received Content ", [Content]),
 
 	case message_parser:parse_header([Header]) of
-		%% KERNEL_INFO_REQUEST
-		%% IPython requests information about the kernel.
-		%% python version, language name, messaging version, ipython version
+		%%% KERNEL_INFO_REQUEST
 		{ok, _Username, Session, _MessageID, ?KERNEL_INFO_REQUEST, Date}->
+      %%% KERNEL_INFO_REPLY
       KernelInfoReply = #reply_message{
         uuid = Session,
         parent_header = Header,
@@ -74,10 +73,20 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
         content = message_builder:generate_content_reply(kernel_info_reply)
       },
       message_sender:send_reply(KernelInfoReply, ShellSocket);
-		%% EXECUTE_REQUEST
+		%%% EXECUTE_REQUEST
 		{ok, _Username, Session, _MessageID, ?EXECUTE_REQUEST, Date}->
-			%%EXECUTE_REPLY
+			%%% EXECUTE_REPLY STEPS:
+      % 1. SEND BUSY STATUS ON IOPUB
+      % 2. PARSE EXECUTE_REQUEST CONTENT
+      % 3. SEND PYIN ON IOPUB
+      % 4. EVALUATE THE ERLANG CODE
+      % 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
+      % 6. SEND PYOUT MESSAGE ON IOPUB
+      % 7. SEND IDLE STATUS MESSAGE ON IOPUB
+      % 7.
+      % 7.
 
+      %%% 1. SEND BUSY STATUS ON IOPUB
       BusyReplyRecord = #reply_message{
         uuid = Session,
         header = message_builder:generate_header_reply(Session, ?STATUS, Date),
@@ -86,17 +95,18 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
       },
       message_sender:send_reply(BusyReplyRecord, IOPubSocket),
 
-
-			%% Parse the EXECUTE_REQUEST content
+			%%% 2. PARSE EXECUTE_REQUEST CONTENT
 			{ok, Code, _Silent, _StoreHistory, _UserVariables, _UserExpressions, _AllowStdin}
         = message_parser:parse_content(Content, execute_request),
 
-      %% PYIN
-      %message_sender:send_pyin(IOPubSocket, Code, [Session, Header, Date]),
+      %%% 3. SEND PYIN ON IOPUB
+      message_sender:send_pyin(IOPubSocket, Code, [Session, Header, Date]),
 
-			%% EVALUATE ERLANG CODE
+			%%% 4. EVALUATE THE ERLANG CODE
 			case code_manager:module_or_expression(Code, Bindings) of
-        %% Module Compilation Results--------------------------------------------------------------
+        %%%---------------------------------------------------------------
+        %%% MODULE COMPILATION RESULTS
+        %%% --------------------------------------------------------------
         {ok, CompileResultList}->
           case CompileResultList of
             [] -> CompileResult = ?SUCCESS_MSG;
@@ -104,7 +114,7 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           end,
           print("[Shell] Code Compile Result = ", [CompileResult]),
 
-          %% EXECUTE_REPLY MESSAGE
+          %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
           print("[Shell] Generating execute content reply"),
           print("[Shell] Value = ", [CompileResult]),
           ExecuteReplyRecord = #reply_message{
@@ -115,10 +125,10 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           },
           message_sender:send_reply(ExecuteReplyRecord, ShellSocket),
 
-          %% PYOUT MESSAGE
+          %%% 6. SEND PYOUT MESSAGE ON IOPUB
           message_sender:send_pyout(IOPubSocket, CompileResult, [Session, Header, Date, ExeCount]),
 
-          %% IDLE STATUS MESSAGE
+          %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
           IdleStatusReplyRecord = #reply_message{
             uuid = Session,
             header = message_builder:generate_header_reply(Session, ?STATUS, Date),
@@ -127,13 +137,15 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           },
           message_sender:send_reply(IdleStatusReplyRecord, IOPubSocket),
 
-          %% Call Shell Listener again, incrementing the execution count by one.
+          %%% Call Shell Listener again, incrementing the execution count by one.
           shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings);
-        %% Successful Code Execution----------------------------------------------------------------
+        %%%----------------------------------------------------------------
+        %%% SUCCESSFUL CODE EXECUTION
+        %%%----------------------------------------------------------------
 				{ok, Value, NewBindings}->
 					print("[Shell] Code Execution Result = ", [Value]),
 
-					%% EXECUTE_REPLY MESSAGE
+          %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
           print("[Shell] Generating execute content reply"),
           print("[Shell] Value = ", [Value]),
           ExecuteReplyRecord = #reply_message{
@@ -144,10 +156,10 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           },
           message_sender:send_reply(ExecuteReplyRecord, ShellSocket),
 
-          %% PYOUT MESSAGE
+          %%% 6. SEND PYOUT MESSAGE ON IOPUB
           message_sender:send_pyout(IOPubSocket, Value, [Session, Header, Date, ExeCount]),
 
-          %% IDLE STATUS MESSAGE
+          %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
           IdleStatusReplyRecord = #reply_message{
             uuid = Session,
             header = message_builder:generate_header_reply(Session, ?STATUS, Date),
@@ -156,10 +168,11 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           },
           message_sender:send_reply(IdleStatusReplyRecord, IOPubSocket),
 
-          %% Call Shell Listener again, incrementing the execution count by one.
+          %%% Call Shell Listener again, incrementing the execution count by one.
           shell_listener(ShellSocket, IOPubSocket, ExeCount+1, NewBindings);
-        %% Unsuccessful Code Execution TODO - each char of Traceback being output on separate line
-        %% ---------------------------------------------------------------------------------------
+        %%%--------------------------------------------------------------
+        %% UNSUCCESSFUL CODE EXECUTION TODO - each char of Traceback being output on separate line
+        %% --------------------------------------------------------------
 				{error, Exception, Reason}->
 					print("[Shell] Code Execution Exception = ", [Exception]),
           print("Building error execute reply"),
@@ -167,6 +180,7 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           %% ERROR EXECUTE_REPLY %%TODO - Traceback appears as a list of a million chars :/
           %% Leaving Traceback param as an empty list for now, and outputting via pyout
           %% reply_type, status, exe_count, excetpionName, ExceptionValue, TracebackList
+          %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
           ExecuteReplyRecord = #reply_message{
             uuid = Session,
             header = message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
@@ -179,10 +193,10 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           %% PYERR MESSAGE
           %% message_sender:send_pyerr(IOPubSocket, Exception, ExeCount, Reason, [Traceback], [Session, Header, Date]),
 
-          %% PYOUT MESSAGE - Using pyout because of issue with pyerr
+          %%% 6. SEND PYOUT MESSAGE ON IOPUB
           message_sender:send_pyout(IOPubSocket, Reason, [Session, Header, Date, ExeCount]),
 
-          %% IDLE STATUS MESSAGE
+          %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
           IdleStatusReplyRecord = #reply_message{
             uuid = Session,
             header = message_builder:generate_header_reply(Session, ?STATUS, Date),
@@ -193,7 +207,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 
           shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings)
 			end;
-    %%COMPLETE_REQUEST
+    %%%----------------------------------------------------------------
+    %%% COMPLETE_REQUEST
+    %%%----------------------------------------------------------------
     {ok, _Username, _Session, _MessageID, ?COMPLETE_REQUEST, _Date}->
       print("[Shell] Received complete_request message"),
       case message_parser:parse_content(Content, complete_request) of

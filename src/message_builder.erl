@@ -147,7 +147,9 @@ generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionN
 %% @doc Creates the content reply for pyout
 %%      sent over the iopub socket.
 generate_content_reply(pyout, {ExecutionCount, CodeOutput})->
-  Data = {struct, [
+  PyoutContent =
+  try
+    Data = {struct, [
     {'text/html', CodeOutput},
     {'text/plain', CodeOutput}
   ]},
@@ -158,7 +160,23 @@ generate_content_reply(pyout, {ExecutionCount, CodeOutput})->
     {data, DataJson},
     {metadata, {}}
   ]},
-  PyoutContent = mochijson2:encode(Content),
+  mochijson2:encode(Content)
+  catch
+      _:_ ->
+        FrmtCode = io_lib:format("~p", [CodeOutput]),
+        FrmtData = {struct, [
+          {'text/html', FrmtCode},
+          {'text/plain', FrmtCode}
+        ]},
+        FrmtDataJson = mochijson2:encode(FrmtData),
+
+        FrmtContent = {struct,	[
+        {execution_count, ExecutionCount},
+        {data, FrmtDataJson},
+        {metadata, {}}
+        ]},
+        mochijson2:encode(FrmtContent)
+  end,
   PyoutContent;
 
 %% @spec generate_content_reply(atom(), tuple()) -> list()

@@ -16,13 +16,13 @@
 -define(KERNEL_INFO_REPLY, "kernel_info_reply").
 
 -record(reply_message, {
-  uuid,
-  delim = <<"<IDS|MSG>">>,
-  hmac =  <<"">>,
-  header,
-  parent_header,
-  metadata = <<"{}">>,
-  content
+  uuid,                       % uuid
+  delim = <<"<IDS|MSG>">>,    % Delimiter
+  hmac =  <<"">>,             % HMAC
+  header,                     % Serialized header
+  parent_header,              % Serialized parent_header
+  metadata = <<"{}">>,        % Serialized metadata
+  content                     % Serialized content
 }).
 
 send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
