@@ -11,7 +11,6 @@
 -export([parse_content/2, parse_header/1]).
 -define(DEBUG, false).
 
-
 %% @spec parse_content(list(), atom()) -> tuple()
 %% @doc Parses and extracts the Content items from the IPython execute_request message
 parse_content(Content, execute_request)->

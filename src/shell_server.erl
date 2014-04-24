@@ -22,6 +22,16 @@
 -define(ERROR_STATUS, "error").
 -define(SUCCESS_MSG, "Successfully Compiled").
 
+-record(reply_message, {
+  uuid,
+  delim = <<"<IDS|MSG>">>,
+  hmac =  <<"">>,
+  header,
+  parent_header,
+  metadata = <<"{}">>,
+  content
+}).
+
 
 %%% @doc Starts the shell server
 start(ShellSocket, IOPubSocket) ->
@@ -57,26 +67,32 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 		%% IPython requests information about the kernel.
 		%% python version, language name, messaging version, ipython version
 		{ok, _Username, Session, _MessageID, ?KERNEL_INFO_REQUEST, Date}->
-      message_sender:send(kernel_info_reply, ShellSocket, {}, [Session,Header,Date]);
+      KernelInfoReply = #reply_message{
+        uuid = Session,
+        parent_header = Header,
+        header = message_builder:generate_header_reply(Session, ?KERNEL_INFO_REPLY, Date),
+        content = message_builder:generate_content_reply(kernel_info_reply)
+      },
+      message_sender:send_reply(KernelInfoReply, ShellSocket);
 		%% EXECUTE_REQUEST
 		{ok, _Username, Session, _MessageID, ?EXECUTE_REQUEST, Date}->
 			%%EXECUTE_REPLY
-			ExecuteReplyHeader = message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
-			Metadata = message_builder:create_metadata(),
 
-			%% BUSY STATUS MESSAGE
-			BusyReplyHeader = message_builder:generate_header_reply(Session, ?STATUS, Date),
-			BusyStatusReplyContent = message_builder:generate_content_reply(busy),
-			BusyStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, BusyReplyHeader,
-                                                Header, BusyStatusReplyContent, Metadata),
-			message_sender:send_reply(BusyStatusReplyList, IOPubSocket),
+      BusyReplyRecord = #reply_message{
+        uuid = Session,
+        header = message_builder:generate_header_reply(Session, ?STATUS, Date),
+        parent_header = Header,
+        content = message_builder:generate_content_reply(busy)
+      },
+      message_sender:send_reply(BusyReplyRecord, IOPubSocket),
+
 
 			%% Parse the EXECUTE_REQUEST content
 			{ok, Code, _Silent, _StoreHistory, _UserVariables, _UserExpressions, _AllowStdin}
         = message_parser:parse_content(Content, execute_request),
 
       %% PYIN
-      message_sender:send_pyin(IOPubSocket, Code, [Session, Header, Date]),
+      %message_sender:send_pyin(IOPubSocket, Code, [Session, Header, Date]),
 
 			%% EVALUATE ERLANG CODE
 			case code_manager:module_or_expression(Code, Bindings) of
@@ -91,19 +107,25 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           %% EXECUTE_REPLY MESSAGE
           print("[Shell] Generating execute content reply"),
           print("[Shell] Value = ", [CompileResult]),
-          ReplyContent = message_builder:generate_content_reply(execute_reply, {?OK_STATUS, ExeCount, {}, {}}),
-          ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ExecuteReplyHeader, Header, ReplyContent, Metadata),
-          message_sender:send_reply(ReplyList, ShellSocket),
+          ExecuteReplyRecord = #reply_message{
+            uuid = Session,
+            header = message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
+            parent_header = Header,
+            content = message_builder:generate_content_reply(execute_reply, {?OK_STATUS, ExeCount, {}, {}})
+          },
+          message_sender:send_reply(ExecuteReplyRecord, ShellSocket),
 
           %% PYOUT MESSAGE
           message_sender:send_pyout(IOPubSocket, CompileResult, [Session, Header, Date, ExeCount]),
 
           %% IDLE STATUS MESSAGE
-          IdleReplyHeader = message_builder:generate_header_reply(Session, ?STATUS, Date),
-          IdleStatusReplyContent = message_builder:generate_content_reply(idle),
-          IdleStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, IdleReplyHeader, Header,
-            IdleStatusReplyContent, Metadata),
-          message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
+          IdleStatusReplyRecord = #reply_message{
+            uuid = Session,
+            header = message_builder:generate_header_reply(Session, ?STATUS, Date),
+            parent_header = Header,
+            content = message_builder:generate_content_reply(idle)
+          },
+          message_sender:send_reply(IdleStatusReplyRecord, IOPubSocket),
 
           %% Call Shell Listener again, incrementing the execution count by one.
           shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings);
@@ -114,22 +136,25 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
 					%% EXECUTE_REPLY MESSAGE
           print("[Shell] Generating execute content reply"),
           print("[Shell] Value = ", [Value]),
-					ReplyContent = message_builder:generate_content_reply(execute_reply, {?OK_STATUS, ExeCount, {}, {}}),
-					ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ExecuteReplyHeader, Header, ReplyContent, Metadata),
-					message_sender:send_reply(ReplyList, ShellSocket),
-
-          %%DISPLAY_DATA
-          %message_sender:send(display_data, IOPubSocket, {"username", Value, {}}, [Session, Header, Date]),
+          ExecuteReplyRecord = #reply_message{
+            uuid = Session,
+            header = message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
+            parent_header = Header,
+            content = message_builder:generate_content_reply(execute_reply, {?OK_STATUS, ExeCount, {}, {}})
+          },
+          message_sender:send_reply(ExecuteReplyRecord, ShellSocket),
 
           %% PYOUT MESSAGE
           message_sender:send_pyout(IOPubSocket, Value, [Session, Header, Date, ExeCount]),
 
-					%% IDLE STATUS MESSAGE
-					IdleReplyHeader = message_builder:generate_header_reply(Session, ?STATUS, Date),
-					IdleStatusReplyContent = message_builder:generate_content_reply(idle),
-					IdleStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, IdleReplyHeader, Header,
-                                                          IdleStatusReplyContent, Metadata),
-					message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
+          %% IDLE STATUS MESSAGE
+          IdleStatusReplyRecord = #reply_message{
+            uuid = Session,
+            header = message_builder:generate_header_reply(Session, ?STATUS, Date),
+            parent_header = Header,
+            content = message_builder:generate_content_reply(idle)
+          },
+          message_sender:send_reply(IdleStatusReplyRecord, IOPubSocket),
 
           %% Call Shell Listener again, incrementing the execution count by one.
           shell_listener(ShellSocket, IOPubSocket, ExeCount+1, NewBindings);
@@ -142,13 +167,14 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           %% ERROR EXECUTE_REPLY %%TODO - Traceback appears as a list of a million chars :/
           %% Leaving Traceback param as an empty list for now, and outputting via pyout
           %% reply_type, status, exe_count, excetpionName, ExceptionValue, TracebackList
-          ErrorReplyContent = message_builder:generate_content_reply(execute_reply_error, {"error", ExeCount, Exception,
-                                                                                           Reason, []}),
-          print("Generated error reply content"),
-          ReplyList = message_builder:msg_parts_to_ipython_msg(Session, ExecuteReplyHeader, Header,
-                                                ErrorReplyContent, Metadata),
-          print("Sending execute_reply error"),
-          message_sender:send_reply(ReplyList, ShellSocket),
+          ExecuteReplyRecord = #reply_message{
+            uuid = Session,
+            header = message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
+            parent_header = Header,
+            content = message_builder:generate_content_reply(execute_reply_error,
+                                      {"error", ExeCount, Exception, Reason, []})
+          },
+          message_sender:send_reply(ExecuteReplyRecord, ShellSocket),
 
           %% PYERR MESSAGE
           %% message_sender:send_pyerr(IOPubSocket, Exception, ExeCount, Reason, [Traceback], [Session, Header, Date]),
@@ -157,11 +183,14 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           message_sender:send_pyout(IOPubSocket, Reason, [Session, Header, Date, ExeCount]),
 
           %% IDLE STATUS MESSAGE
-          IdleReplyHeader = message_builder:generate_header_reply(Session, "status", Date),
-          IdleStatusReplyContent = message_builder:generate_content_reply(idle),
-          IdleStatusReplyList = message_builder:msg_parts_to_ipython_msg(Session, IdleReplyHeader, Header,
-                                                        IdleStatusReplyContent, Metadata),
-          message_sender:send_reply(IdleStatusReplyList, IOPubSocket),
+          IdleStatusReplyRecord = #reply_message{
+            uuid = Session,
+            header = message_builder:generate_header_reply(Session, ?STATUS, Date),
+            parent_header = Header,
+            content = message_builder:generate_content_reply(idle)
+          },
+          message_sender:send_reply(IdleStatusReplyRecord, IOPubSocket),
+
           shell_listener(ShellSocket, IOPubSocket, ExeCount+1, Bindings)
 			end;
     %%COMPLETE_REQUEST
