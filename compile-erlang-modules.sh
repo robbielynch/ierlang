@@ -15,3 +15,6 @@ erlc shell_server.erl
 erlc heartbeat_server.erl
 
 erlc code_manager.erl
+
+erlc restrictions.erl
+erlc sandbox.erl
