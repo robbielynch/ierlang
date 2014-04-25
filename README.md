@@ -10,7 +10,7 @@ HTML rendering, saving notebooks for later use and even the ability to view IErl
 Notebooks in [IPython's NBViewer](http://nbviewer.ipython.org/)
 
 ###Disclaimer
-Please note, the development of this language kernel for IPython is at it's very early stages.
+The development of this language kernel for IPython is at it's very early stages.
 This is Alpha. Take with a large pinch of salt. No sugar necessary, because it's pretty damn sweet! :)
 
 ###Note
@@ -25,6 +25,11 @@ some thoughts on how to improve IErlang.
 #Demo
 [You can view a demo IErlang notebook on IPython's Nbviewer](http://nbviewer.ipython.org/gist/anonymous/10775415)
 
+#Restricted Mode
+It is now possible to allow IErlang to run in ***restricted mode***. Where only certain erlang
+expressions have permission to run. To do so:
+* edit the `src/code_manager.erl` file.
+* set the macro **RESTRICTED_MODE** to `true`. Where true is an atom.
 
 #IErlang Installation
 Note that IErlang has only been tested with ***IPython 2.0.0***
@@ -156,13 +161,17 @@ location corresponds to the escript location on your machine. Change it if it no
 * Pray that it works
 
 
-
 #Possible Errors
 * If you see an error in the terminal referring to python code:
 `No such file or directory` and if you see `subprocess.py` a couple of lines above this:
   This means that `ierlang/src/start-ierl-notebook.sh` is not referring to the correct location of your escript.
 
 * If you see an error about `erlzmq:context()`, this means your ERL_LIBS are not configured correctly.
+
+* If you're still gettin errors with `erlzmq` when starting IErlang. In the *ierlang* directory, try running the command:
+```
+ERL_LIBS=$ERL_LIBS ./ierlang-notebook.sh
+```
 
 
 #Known Issues
@@ -190,4 +199,12 @@ Possibly by using shell scripts instead of escript and incorporating ERL_LIBS in
 * Allow users to run IErlang outside of src folder (Maybe the kernel profile could fix this)
 * Refactor the messy code and layout
 * Figure out a solution to pyerr displaying each char on a separate line - temporary solution is to use pyout
-* Remove print strings from IErlang - only output text if debugging is enabled.
+* ~~Remove print strings from IErlang - only output text if debugging is enabled.~~
+
+#Thanks to
+* [Roberto Aloi](http://roberto-aloi.com/) - For his [Erlang Sandbox](https://github.com/robertoaloi/erlang-sandbox) code,
+which allows users of IErlang to run erlang code in a restricted environment if necessary.
+
+* [Andrew Gibiansky](http://andrew.gibiansky.com/) - For his blog post on how to create IPython language kernels
+
+* [Paul Barry](http://glasnost.itcarlow.ie/~barryp/) Brains behind the project
