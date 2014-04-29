@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
-%%% @copyright (C) 2014, <COMPANY>
+%%% @copyright (C) 2014, Robbie Lynch
 %%% @doc The code manager handles execution of erlang code and
 %%%      compilation of erlang modules.
 %%%
@@ -75,7 +75,9 @@ execute(Code, Bindings)->
         {Value, NewBindings} = sandbox:eval(Code, Bindings),
         case type_of(Value) of
           list -> ReturnValue = Value;
-          _Else -> ReturnValue = lists:flatten(io_lib:format("~p", [Value]))
+          integer -> ReturnValue = Value;
+          float -> ReturnValue = Value;
+          _ -> ReturnValue = lists:flatten(io_lib:format("~p", [Value]))
         end,
         {ok, ReturnValue, NewBindings}
       catch
@@ -97,7 +99,9 @@ execute(Code, Bindings)->
         % to be encoded to json
         case type_of(Value) of
           list -> ReturnValue = Value;
-          _Else -> ReturnValue = lists:flatten(io_lib:format("~p", [Value]))
+          integer -> ReturnValue = Value;
+          float -> ReturnValue = Value;
+          _ -> ReturnValue = lists:flatten(io_lib:format("~p", [Value]))
         end,
         print("code execution return value = ", [ReturnValue]),
         {ok, ReturnValue, NewBindings}
