@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
-%%% @copyright (C) 2014, <COMPANY>
+%%% @copyright (C) 2014, Robbie Lynch
 %%% @doc The Shell Server handles the most important messages received
 %%%      from IPython.
 %%%

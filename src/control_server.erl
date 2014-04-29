@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
-%%% @copyright (C) 2014, <COMPANY>
+%%% @copyright (C) 2014, Robbie Lynch
 %%% @doc The Control server handles some requests from IPython
 %%%
 %%% @end

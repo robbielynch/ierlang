@@ -17,8 +17,7 @@ run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort}, {iopu
 	ConnectionStringBuilder1 = string:concat(binary_to_list(Transport),"://"),
   ConnectionStringBuilder2 = string:concat(binary_to_list(IP),":"),
   ConnectionString = string:concat(ConnectionStringBuilder1, ConnectionStringBuilder2),
-	%%ConnectionString = "tcp://127.0.0.1:",
-	
+
 	%% Create Sockets that will be used to communicate with IPython
 	{ok,Context} = erlzmq:context(),
 	{ok, HeartbeatSocket} = erlzmq:socket(Context, rep),
@@ -45,6 +44,7 @@ run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort}, {iopu
   loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket).
 
 %% Function to listen and respond on all sockets.
+%% Constant loop keeps the kernel alive.
 loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket)->
 	%% Keep listening and responding
   loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket).

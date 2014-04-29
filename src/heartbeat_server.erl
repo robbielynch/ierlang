@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
-%%% @copyright (C) 2014, <COMPANY>
+%%% @copyright (C) 2014, Robbie Lynch
 %%% @doc The heartbeat sever keeps IPython alive by constantly
 %%%      listening for messages on the given socket and replying
 %%%      with a ping message.

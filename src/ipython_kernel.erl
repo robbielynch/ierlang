@@ -3,6 +3,7 @@
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
 %%% @doc Starts all servers to handle messages, parses the json configuration file.
 
+%% JSON FILE CONTENTS
 %% Receives a list of arguments from IPython.
 %% The list contains the absolute path to the kernel.json file.
 %% The kernel.json file contains:
@@ -18,7 +19,6 @@
 
 
 %% @doc The main function is automatically called upon script execution
-%%      Handles
 main([JsonFile|_]) ->
   io:format("[ERLANG KERNEL]~n"),
   erlang:display(JsonFile),

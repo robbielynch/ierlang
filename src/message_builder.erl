@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
-%%% @copyright (C) 2014, <COMPANY>
+%%% @copyright (C) 2014, Robbie Lynch
 %%% @doc Module that contains the functions to create replies to
 %%%      IPython messages.
 %%%
@@ -10,8 +10,7 @@
 -module(message_builder).
 -author("Robbie Lynch").
 -export([generate_content_reply/2, generate_content_reply/1,
-         msg_parts_to_ipython_msg/5, create_metadata/0,
-        generate_header_reply/3]).
+         create_metadata/0, generate_header_reply/3]).
 -define(DEBUG, false).
 -define(USERNAME, "ierlang_kernel").
 -define(IDLE_STATUS, "idle").
@@ -19,21 +18,6 @@
 -define(STARTING_STATUS, "starting").
 -define(OK_STATUS, "ok").
 -define(ERROR_STATUS, "error").
-
-
-%% @spec msg_parts_to_list_of_binary_msg_parts(list(), list(), binary(), list(), list()) -> list()
-%% @doc Function to convert all message parts to binary before and place them
-%%      in a list before it is sent to IPython via zmq.
-msg_parts_to_ipython_msg(Session, KernelHeader, ParentHeader, Content, _Metadata)->
-  [
-    list_to_binary(Session),									%uuid
-    list_to_binary("<IDS|MSG>"),							%delim
-    list_to_binary(""),										    %hmac
-    list_to_binary(KernelHeader), 						%serialised header
-    ParentHeader,											        %serialised parent header
-    list_to_binary("{}"),									    %serialised metadata
-    list_to_binary(Content)									  %serialised content
-  ].
 
 %% @spec generate_header_reply(list(), list(), list()) -> list()
 %% @doc Creates the header for the message being sent to IPython
@@ -47,7 +31,6 @@ generate_header_reply(Session, MessageType, Date)->
   ]},
   Header = mochijson2:encode(HeaderPropList),
   Header.
-
 
 %% @spec generate_content_reply(atom()) -> list()
 %% @doc Creates the content reply for the busy status sent over the
@@ -113,7 +96,6 @@ generate_content_reply(kernel_info_reply)->
   ReplyJson = mochijson2:encode(Content),
   ReplyJson.
 
-
 %% @doc Creates the content reply for a successful execute_reply
 %%      sent over the shell socket.
 generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExprs})->
@@ -136,7 +118,7 @@ generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionN
     {status, ?ERROR_STATUS},
     {execution_count, ExecutionCount},
     {ename, ExceptionName},
-    {evalue, "ERROR DUDE"},
+    {evalue, "ERROR"},
     {traceback, Traceback}
   ]},
   print("converting to json"),
@@ -196,7 +178,7 @@ generate_content_reply(pyerr, {_ExceptionName, ExecutionCount, _ExceptionValue, 
   Content = {struct,	[
     {execution_count, ExecutionCount},
     {ename, "error"},
-    {evalue, "ERROR DUDE"},
+    {evalue, "ERROR"},
     {traceback, Traceback}
   ]},
   PyerrContent = mochijson2:encode(Content),

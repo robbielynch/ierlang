@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
-%%% @copyright (C) 2014, <COMPANY>
+%%% @copyright (C) 2014, Robbie Lynch
 %%% @doc This module sends messages to IPython frontend using ZMQ
 %%%
 %%% @end
@@ -25,6 +25,7 @@
   content                     % Serialized content
 }).
 
+%%% @doc Send a pyout message
 send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
   PyoutReply = #reply_message{
     uuid = Session,
@@ -34,6 +35,7 @@ send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
   },
   send_reply(PyoutReply, IOPubSocket).
 
+%%% @doc Send a pyin message
 send_pyin(IOPubSocket, CodeInput, [Session, IPythonHeader, Date])->
   PyinReply = #reply_message{
     uuid = Session,
@@ -43,6 +45,7 @@ send_pyin(IOPubSocket, CodeInput, [Session, IPythonHeader, Date])->
   },
   send_reply(PyinReply, IOPubSocket).
 
+%%% @doc Send a pyerr message
 send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
                           Traceback, [Session, IPythonHeader, Date])->
   PyerrReply = #reply_message{
@@ -54,6 +57,7 @@ send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
   },
   send_reply(PyerrReply, IOPubSocket).
 
+%%% @doc Send a display_data message
 send(display_data, IOPubSocket, {Source, RawData, Metadata}, [Session, IPythonHeader, Date])->
   DisplayDataReply = #reply_message{
     uuid = Session,
@@ -63,7 +67,7 @@ send(display_data, IOPubSocket, {Source, RawData, Metadata}, [Session, IPythonHe
   },
   send_reply(DisplayDataReply, IOPubSocket).
 
-
+%%% @doc Send the reply message record to IPython on the given socket
 send_reply(Record, Socket)->
   %% Send the Reply to IPython as a ZMQ multi-part message
   ok = erlzmq:send(Socket, list_to_binary(Record#reply_message.uuid), [sndmore]),
