@@ -17,10 +17,7 @@
     message_builder,
     message_parser,
     message_sender,
-    restrictions,
-    sandbox,
     shell_server,
-    uuid,
     zmq_manager
    ]},
 
