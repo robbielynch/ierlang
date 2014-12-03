@@ -12,3 +12,4 @@ erl_crash.dump
 .ipynb_checkpoints/
 .ipynb_checkpoints/*
 .venv*
+ebin
