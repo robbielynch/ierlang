@@ -1,0 +1,8 @@
+#!escript
+
+%%% @author Robbie Lynch <robbie.lynch@outlook.com>
+%%% @doc Starts all servers to handle messages, parses the json configuration file.
+
+%% @doc The main function is automatically called upon script execution
+main([JsonFile|_]) ->
+  ipython_kernel:main(JsonFile).
