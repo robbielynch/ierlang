@@ -13,10 +13,27 @@ rendering, HTML rendering, saving notebooks for later use and even the ability
 to view IErlang Notebooks in [IPython's NBViewer](http://nbviewer.ipython.org/)
 
 
+## Requirements:
+
+* Python 2.7 in your ``$PATH``
+* Erlang installed with ``erl`` and ``escript`` in your ``$PATH``
+* ``virtualenv`` installed
+* ``rebar`` installed
+
 ## Installation
 
-See the [installation instructions](https://github.com/robbielynch/ierlang/wiki/Installation)
-on the wiki page.
+You need only do the following to get started:
+
+```bash
+$ make demo
+```
+
+This will do the following:
+
+* Get all Python deps and patch IPython for IErlang support
+* Get all Erlang deps and compile them
+* Compile IErlang
+* Start up an IErlang Notebook, loading a demo in your browser
 
 
 ## Notes
