@@ -26,7 +26,6 @@ compile:
 py2notebook: py2deps compile
 	@echo "Starting IErlang Notebook..."
 	@. $(PY2_VENV)/bin/activate && \
-	cd src && \
 	ERL_LIBS=$(ERLLIBS) \
 	ipython2 notebook \
 	--KernelManager.kernel_cmd='["$(ESCRIPT)", "$(IPY_KERN)", "{connection_file}"]' \
@@ -36,9 +35,10 @@ py2notebook: py2deps compile
 py2shell: py2deps compile
 	@echo "Starting IErlang Console..."
 	@. $(PY2_VENV)/bin/activate && \
-	cd src && \
 	ERL_LIBS=$(ERLLIBS) \
 	ipython2 console \
 	--KernelManager.kernel_cmd='["$(ESCRIPT)", "$(IPY_KERN)", "{connection_file}"]' \
 	--Session.key="" \
 	--Session.keyfile=""
+
+erl:
