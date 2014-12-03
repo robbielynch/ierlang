@@ -5,6 +5,9 @@ endif
 
 PY2=python2.7
 PY2_VENV=./.venv-py2
+PATCHED=patches/patched
+SESSION_SRC=$(PY2_VENV)/lib/python2.7/site-packages/IPython/kernel/zmq/session.py
+
 ESCRIPT=$(shell which escript)
 IPY_KERN=$(shell pwd)/bin/start_kernel
 DEP_LIBS=deps/erlzmq:deps/mochiweb:deps/sandbox:deps/uuid
@@ -17,6 +20,11 @@ py2venv:
 py2deps: py2venv
 	@. $(PY2_VENV)/bin/activate && \
 	pip install -r requirements.txt
+	@make $(PATCHED)
+
+$(PATCHED):
+	patch $(SESSION_SRC) < patches/ierlang.patch
+	touch $(PATCHED)
 
 compile:
 	@echo "Compiling IErlang..."
@@ -43,3 +51,7 @@ py2shell: py2deps compile
 
 erl:
 	ERL_LIBS=$(ERLLIBS) erl
+
+clean:
+	rm -rf $(PY2_VENV) $(PATCHED)
+	rebar clean
