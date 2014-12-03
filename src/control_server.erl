@@ -13,7 +13,7 @@
 %%% @doc Start the control server
 start(ControlSocket)->
   loop(ControlSocket).
-  
+
 loop(ControlSocket) ->
   control_listener(ControlSocket),
   loop(ControlSocket).
