@@ -11,3 +11,4 @@ erl_crash.dump
 .idea/*
 .ipynb_checkpoints/
 .ipynb_checkpoints/*
+.venv*
