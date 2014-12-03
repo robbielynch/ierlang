@@ -42,3 +42,4 @@ py2shell: py2deps compile
 	--Session.keyfile=""
 
 erl:
+	ERL_LIBS=$(ERLLIBS) erl
