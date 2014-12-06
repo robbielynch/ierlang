@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 03. Apr 2014 11:30
 %%%-------------------------------------------------------------------
--module(message_sender).
+-module(ierl_message_sender).
 -author("Robbie Lynch").
 -export([send/4,send_pyout/3,send_pyin/3, send_pyerr/6, send_reply/2]).
 -define(PYOUT, "pyout").

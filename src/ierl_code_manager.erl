@@ -7,7 +7,7 @@
 %%% @end
 %%% Created : 31. Mar 2014 10:02
 %%%-------------------------------------------------------------------
--module (code_manager).
+-module (ierl_code_manager).
 -export ([module_or_expression/2]).
 -define(DEBUG, false).
 -define(RESTRICTED_MODE, false).

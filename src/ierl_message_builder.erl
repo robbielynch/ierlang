@@ -7,7 +7,7 @@
 %%% @end
 %%% Created : 03. Apr 2014 10:51
 %%%-------------------------------------------------------------------
--module(message_builder).
+-module(ierl_message_builder).
 -author("Robbie Lynch").
 -export([generate_content_reply/2, generate_content_reply/1,
          create_metadata/0, generate_header_reply/3]).
@@ -22,7 +22,7 @@
 %% @spec generate_header_reply(list(), list(), list()) -> list()
 %% @doc Creates the header for the message being sent to IPython
 generate_header_reply(Session, MessageType, Date)->
-  HeaderPropList = {struct,	[
+  HeaderPropList = {struct, [
     {date, Date},
     {username, ?USERNAME},
     {session, Session},
@@ -37,7 +37,7 @@ generate_header_reply(Session, MessageType, Date)->
 %%      iopub socket.
 generate_content_reply(busy)->
   %%Should be sent before the execution of the code
-  Content = {struct,	[ 	{execution_state, ?BUSY_STATUS}	]},
+  Content = {struct, [{execution_state, ?BUSY_STATUS}]},
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
@@ -45,7 +45,7 @@ generate_content_reply(busy)->
 %% @doc Creates the content reply for the idle status sent over the
 %%      iopub socket.
 generate_content_reply(idle)->
-  Content = {struct,	[ 	{execution_state, ?IDLE_STATUS}	]},
+  Content = {struct,    [     {execution_state, ?IDLE_STATUS}    ]},
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
@@ -53,7 +53,7 @@ generate_content_reply(idle)->
 %% @doc Creates the content reply for the starting status sent over the
 %%      iopub socket.
 generate_content_reply(starting)->
-  Content = {struct,	[ 	{execution_state, ?STARTING_STATUS}	]},
+  Content = {struct,    [     {execution_state, ?STARTING_STATUS}    ]},
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
@@ -61,7 +61,7 @@ generate_content_reply(starting)->
 %% @doc Creates the content reply for the kernel_info_reply sent over the
 %%      shell socket.
 generate_content_reply(kernel_info_reply)->
-%	Version of messaging protocol (mandatory).
+%    Version of messaging protocol (mandatory).
 %   The first integer indicates major version.  It is incremented when
 %   there is any backward incompatible change.
 %   The second integer indicates minor version.  It is incremented when
@@ -85,21 +85,21 @@ generate_content_reply(kernel_info_reply)->
 %   'language': str,
   Language = "erlang",
 
-%	Build the proplist to be converted to json
-  Content = {struct,	[
+%    Build the proplist to be converted to json
+  Content = {struct,    [
     {protocol_version, ProtocolVersion},
     {language_version, LanguageVersion},
     {ipython_version, IPythonVersion},
     {language, Language}
   ]},
-%	Build the Json Reply
+%    Build the Json Reply
   ReplyJson = mochijson2:encode(Content),
   ReplyJson.
 
 %% @doc Creates the content reply for a successful execute_reply
 %%      sent over the shell socket.
 generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExprs})->
-  Content = {struct,	[
+  Content = {struct,    [
     {status, ?OK_STATUS},
     {execution_count, ExecutionCount},
     {payload, []},
@@ -114,7 +114,7 @@ generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExp
 %%      sent over the shell socket.
 generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionName, _ExceptionValue, Traceback})->
   print("in generate_content_reply for execute reply error"),
-  Content = {struct,	[
+  Content = {struct,    [
     {status, ?ERROR_STATUS},
     {execution_count, ExecutionCount},
     {ename, ExceptionName},
@@ -137,7 +137,7 @@ generate_content_reply(pyout, {ExecutionCount, CodeOutput})->
   ]},
   DataJson = mochijson2:encode(Data),
 
-  Content = {struct,	[
+  Content = {struct,    [
     {execution_count, ExecutionCount},
     {data, DataJson},
     {metadata, {}}
@@ -152,7 +152,7 @@ generate_content_reply(pyout, {ExecutionCount, CodeOutput})->
         ]},
         FrmtDataJson = mochijson2:encode(FrmtData),
 
-        FrmtContent = {struct,	[
+        FrmtContent = {struct,    [
         {execution_count, ExecutionCount},
         {data, FrmtDataJson},
         {metadata, {}}
@@ -165,7 +165,7 @@ generate_content_reply(pyout, {ExecutionCount, CodeOutput})->
 %% @doc Creates the content reply for pyin
 %%      sent over the iopub socket.
 generate_content_reply(pyin, {Code, ExecutionCount})->
-  Content = {struct,	[ 	{execution_count, ExecutionCount},
+  Content = {struct,    [     {execution_count, ExecutionCount},
     {code, Code}
   ]},
   PyinContent = mochijson2:encode(Content),
@@ -175,7 +175,7 @@ generate_content_reply(pyin, {Code, ExecutionCount})->
 %% @doc Creates the content reply for pyerr
 %%      sent over the iopub socket.
 generate_content_reply(pyerr, {_ExceptionName, ExecutionCount, _ExceptionValue, Traceback})->
-  Content = {struct,	[
+  Content = {struct,    [
     {execution_count, ExecutionCount},
     {ename, "error"},
     {evalue, "ERROR"},
@@ -196,7 +196,7 @@ generate_content_reply(display_data, {Source, RawData, _MetaData})->
   Data = mochijson2:encode(DataStruct),
 
   % Create the content
-  Content = {struct,	[
+  Content = {struct,    [
     {source, Source},
     {data, Data},
     {metadata, {}}
@@ -207,7 +207,7 @@ generate_content_reply(display_data, {Source, RawData, _MetaData})->
 %% @spec create_metadata() -> list()
 %% @doc Creates the metadata for the outgoing message
 create_metadata()->
-  Metadata = {struct,	[]},
+  Metadata = {struct,    []},
   Md = mochijson2:encode(Metadata),
   Md.
 
