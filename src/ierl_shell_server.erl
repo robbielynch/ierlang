@@ -69,8 +69,8 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
       KernelInfoReply = #reply_message{
         uuid = Session,
         parent_header = Header,
-        header = message_builder:generate_header_reply(Session, ?KERNEL_INFO_REPLY, Date),
-        content = message_builder:generate_content_reply(kernel_info_reply)
+        header = ierl_message_builder:generate_header_reply(Session, ?KERNEL_INFO_REPLY, Date),
+        content = ierl_message_builder:generate_content_reply(kernel_info_reply)
       },
       ierl_message_sender:send_reply(KernelInfoReply, ShellSocket);
         %%% EXECUTE_REQUEST
@@ -87,9 +87,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
       %%% 1. SEND BUSY STATUS ON IOPUB
       BusyReplyRecord = #reply_message{
         uuid = Session,
-        header = message_builder:generate_header_reply(Session, ?STATUS, Date),
+        header = ierl_message_builder:generate_header_reply(Session, ?STATUS, Date),
         parent_header = Header,
-        content = message_builder:generate_content_reply(busy)
+        content = ierl_message_builder:generate_content_reply(busy)
       },
       ierl_message_sender:send_reply(BusyReplyRecord, IOPubSocket),
 
@@ -117,9 +117,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           print("[Shell] Value = ", [CompileResult]),
           ExecuteReplyRecord = #reply_message{
             uuid = Session,
-            header = message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
+            header = ierl_message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
             parent_header = Header,
-            content = message_builder:generate_content_reply(execute_reply, {?OK_STATUS, ExeCount, {}, {}})
+            content = ierl_message_builder:generate_content_reply(execute_reply, {?OK_STATUS, ExeCount, {}, {}})
           },
           ierl_message_sender:send_reply(ExecuteReplyRecord, ShellSocket),
 
@@ -129,9 +129,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
           IdleStatusReplyRecord = #reply_message{
             uuid = Session,
-            header = message_builder:generate_header_reply(Session, ?STATUS, Date),
+            header = ierl_message_builder:generate_header_reply(Session, ?STATUS, Date),
             parent_header = Header,
-            content = message_builder:generate_content_reply(idle)
+            content = ierl_message_builder:generate_content_reply(idle)
           },
           ierl_message_sender:send_reply(IdleStatusReplyRecord, IOPubSocket),
 
@@ -148,9 +148,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           print("[Shell] Value = ", [Value]),
           ExecuteReplyRecord = #reply_message{
             uuid = Session,
-            header = message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
+            header = ierl_message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
             parent_header = Header,
-            content = message_builder:generate_content_reply(execute_reply, {?OK_STATUS, ExeCount, {}, {}})
+            content = ierl_message_builder:generate_content_reply(execute_reply, {?OK_STATUS, ExeCount, {}, {}})
           },
           ierl_message_sender:send_reply(ExecuteReplyRecord, ShellSocket),
 
@@ -160,9 +160,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
           IdleStatusReplyRecord = #reply_message{
             uuid = Session,
-            header = message_builder:generate_header_reply(Session, ?STATUS, Date),
+            header = ierl_message_builder:generate_header_reply(Session, ?STATUS, Date),
             parent_header = Header,
-            content = message_builder:generate_content_reply(idle)
+            content = ierl_message_builder:generate_content_reply(idle)
           },
           ierl_message_sender:send_reply(IdleStatusReplyRecord, IOPubSocket),
 
@@ -181,9 +181,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
           ExecuteReplyRecord = #reply_message{
             uuid = Session,
-            header = message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
+            header = ierl_message_builder:generate_header_reply(Session, ?EXECUTE_REPLY, Date),
             parent_header = Header,
-            content = message_builder:generate_content_reply(execute_reply_error,
+            content = ierl_message_builder:generate_content_reply(execute_reply_error,
                                       {"error", ExeCount, Exception, Reason, []})
           },
           ierl_message_sender:send_reply(ExecuteReplyRecord, ShellSocket),
@@ -197,9 +197,9 @@ shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings)->
           %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
           IdleStatusReplyRecord = #reply_message{
             uuid = Session,
-            header = message_builder:generate_header_reply(Session, ?STATUS, Date),
+            header = ierl_message_builder:generate_header_reply(Session, ?STATUS, Date),
             parent_header = Header,
-            content = message_builder:generate_content_reply(idle)
+            content = ierl_message_builder:generate_content_reply(idle)
           },
           ierl_message_sender:send_reply(IdleStatusReplyRecord, IOPubSocket),
 

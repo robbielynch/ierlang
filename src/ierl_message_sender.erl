@@ -29,9 +29,9 @@
 send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
   PyoutReply = #reply_message{
     uuid = Session,
-    header = message_builder:generate_header_reply(Session, ?PYOUT, Date),
+    header = ierl_message_builder:generate_header_reply(Session, ?PYOUT, Date),
     parent_header = IPythonHeader,
-    content = message_builder:generate_content_reply(pyout, {ExeCount, CodeOutput})
+    content = ierl_message_builder:generate_content_reply(pyout, {ExeCount, CodeOutput})
   },
   send_reply(PyoutReply, IOPubSocket).
 
@@ -39,9 +39,9 @@ send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
 send_pyin(IOPubSocket, CodeInput, [Session, IPythonHeader, Date])->
   PyinReply = #reply_message{
     uuid = Session,
-    header = message_builder:generate_header_reply(Session, ?PYIN, Date),
+    header = ierl_message_builder:generate_header_reply(Session, ?PYIN, Date),
     parent_header = IPythonHeader,
-    content = message_builder:generate_content_reply(pyin, {CodeInput, 1})
+    content = ierl_message_builder:generate_content_reply(pyin, {CodeInput, 1})
   },
   send_reply(PyinReply, IOPubSocket).
 
@@ -50,9 +50,9 @@ send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
                           Traceback, [Session, IPythonHeader, Date])->
   PyerrReply = #reply_message{
     uuid = Session,
-    header = message_builder:generate_header_reply(Session, ?PYERR, Date),
+    header = ierl_message_builder:generate_header_reply(Session, ?PYERR, Date),
     parent_header = IPythonHeader,
-    content = message_builder:generate_content_reply(pyerr, {ExceptionName,
+    content = ierl_message_builder:generate_content_reply(pyerr, {ExceptionName,
       ExecutionCount, ExceptionVal, Traceback})
   },
   send_reply(PyerrReply, IOPubSocket).
@@ -61,9 +61,9 @@ send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
 send(display_data, IOPubSocket, {Source, RawData, Metadata}, [Session, IPythonHeader, Date])->
   DisplayDataReply = #reply_message{
     uuid = Session,
-    header = message_builder:generate_header_reply(Session, ?DISPLAY_DATA, Date),
+    header = ierl_message_builder:generate_header_reply(Session, ?DISPLAY_DATA, Date),
     parent_header = IPythonHeader,
-    content = message_builder:generate_content_reply(display_data, {Source, RawData, Metadata})
+    content = ierl_message_builder:generate_content_reply(display_data, {Source, RawData, Metadata})
   },
   send_reply(DisplayDataReply, IOPubSocket).
 
