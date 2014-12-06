@@ -5,20 +5,20 @@
   {description, "IErlang Notebook"},
 
   %% The version of the application
-  {vsn, "0.0.1"},
+  {vsn, "0.0.3"},
 
   %% All modules used by the application.
   {modules,
    [
-    code_manager,
-    control_server,
-    heartbeat_server,
-    ipython_kernel,
-    message_builder,
-    message_parser,
-    message_sender,
-    shell_server,
-    zmq_manager
+    ierl_code_manager,
+    ierl_control_server,
+    ierl_heartbeat_server,
+    ierl_script,
+    ierl_message_builder,
+    ierl_message_parser,
+    ierl_message_sender,
+    ierl_shell_server,
+    ierl_zmq_manager
    ]},
 
   %% All of the registered names the application uses. This can be ignored.
