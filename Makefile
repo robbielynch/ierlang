@@ -54,9 +54,13 @@ py2shell: py2deps compile py2shell-base
 erl:
 	ERL_LIBS=$(ERLLIBS) erl
 
-clean:
+pyclean:
 	rm -rf $(PY2_VENV) $(PATCHED)
+
+erlclean:
 	rebar clean
+
+clean: pyclean erlclean
 
 demo-base:
 	@echo "Starting IErlang Notebook Demo..."
