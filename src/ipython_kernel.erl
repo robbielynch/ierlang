@@ -1,25 +1,31 @@
-#!escript
-
+%%%-------------------------------------------------------------------
 %%% @author Robbie Lynch <robbie.lynch@outlook.com>
-%%% @doc Starts all servers to handle messages, parses the json configuration file.
+%%% @copyright (C) 2014, Robbie Lynch
+%%% @doc This modules defines functions used to starts all the
+%%%      IErlang servers, to handle messages, and to parse the json
+%%%      configuration file.
+%%%
+%%% @end
+%%% Created : 31. Mar 2014 10:02
+%%%-------------------------------------------------------------------
+-module (ipython_kernel).
+-export ([main/1]).
 
 %% JSON FILE CONTENTS
 %% Receives a list of arguments from IPython.
 %% The list contains the absolute path to the kernel.json file.
 %% The kernel.json file contains:
-%% 		stdin_port: 52248, 
-%% 		ip: "127.0.0.1", 
-%% 		control_port: 52249, 
-%% 		hb_port: 52250, 
-%% 		signature_scheme: "hmac-sha256", 
-%% 		key: "", 
-%% 		shell_port: 52246, 
-%% 		transport: "tcp", 
-%% 		iopub_port: 52247
+%%      stdin_port: 52248,
+%%      ip: "127.0.0.1",
+%%      control_port: 52249,
+%%      hb_port: 52250,
+%%      signature_scheme: "hmac-sha256",
+%%      key: "",
+%%      shell_port: 52246,
+%%      transport: "tcp",
+%%      iopub_port: 52247
 
-
-%% @doc The main function is automatically called upon script execution
-main([JsonFile|_]) ->
+main(JsonFile) ->
   io:format("[ERLANG KERNEL]~n"),
   erlang:display(JsonFile),
   %% Read json file
