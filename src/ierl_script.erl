@@ -8,7 +8,7 @@
 %%% @end
 %%% Created : 31. Mar 2014 10:02
 %%%-------------------------------------------------------------------
--module (ipython_kernel).
+-module (ierl_script).
 -export ([main/1]).
 
 %% JSON FILE CONTENTS
@@ -35,7 +35,7 @@ main(JsonFile) ->
     {ok, StdInPort, IP, ControlPort, HbPort, _SignatureScheme, _Key, ShellPort, Transport, IOPubPort}->
       % Start the zmq manager - which creates and binds all sockets.
       % The zmq manager starts all necessary servers to handle messaging
-      zmq_manager:run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort},
+      ierl_zmq_manager:run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort},
         {iopubport, IOPubPort}, {stdinport, StdInPort}, {ip, IP}, {transport, Transport}]);
     {error, Execption, Reason}->
       io:format("[ERLANG KERNEL] ERROR STARTING ERLANG KERNEL - ~p~p~n", [Execption,Reason])

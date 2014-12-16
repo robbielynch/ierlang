@@ -7,7 +7,7 @@
 %%% @end
 %%% Created : 03. Apr 2014 11:51
 %%%-------------------------------------------------------------------
--module(heartbeat_server).
+-module(ierl_heartbeat_server).
 -author("Robbie Lynch").
 -export([start/1]).
 

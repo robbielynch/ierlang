@@ -20,6 +20,7 @@ to view IErlang Notebooks in [IPython's NBViewer](http://nbviewer.ipython.org/)
 * ``virtualenv`` installed
 * ``rebar`` installed
 
+
 ## Installation
 
 You need only do the following to get started:
@@ -36,6 +37,22 @@ This will do the following:
 * Start up an IErlang Notebook, loading a demo in your browser
 
 
+## Usage
+
+Other ``make`` targets are also provided. Some notes about these:
+
+* ``make clean`` will remove the Python virtual environment as well as the
+  compiled Erlang modules (``ebin/*.beam``).
+* If you just want to clean the Erlang files and leave the Python virtual
+  environment in place, you may use ``make erlclean`` (or ``rebar clean``, of
+  course).
+* You don't have to start with the demo; you can be placed into the IPython web
+  view of the ``notebooks`` directory where you can create new notebooks
+  easily. Just use the ``make py2notebook`` target.
+* If you would like to run the demo again, but don't want to recompile
+  everything, you may use the ``make demo-no-deps`` target.
+
+
 ## Notes
 
 ### Disclaimer
@@ -47,7 +64,7 @@ because it's pretty damn sweet! :)
 
 ### IPython Workaround
 
-Please note: in order to use IErlang, it is required to edit one of IPython's
+Please note: in order to use IErlang, it is required to patch one of IPython's
 files. In IPython 2.0.0, this does not affect the usage of the original IPython.
 
 

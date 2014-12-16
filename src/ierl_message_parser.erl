@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 03. Apr 2014 10:15
 %%%-------------------------------------------------------------------
--module(message_parser).
+-module(ierl_message_parser).
 -author("Robbie Lynch").
 -export([parse_content/2, parse_header/1]).
 -define(DEBUG, false).
