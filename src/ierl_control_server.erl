@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 31. Mar 2014 10:02
 %%%-------------------------------------------------------------------
--module(control_server).
+-module(ierl_control_server).
 -author("Robbie Lynch").
 -export([start/1]).
 
