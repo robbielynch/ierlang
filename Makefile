@@ -3,6 +3,15 @@ $(error Can't find Erlang executable 'erl')
 exit 1
 endif
 
+PY3=python3.4
+PY3_VENV=./.venv-py3
+PY3_VENV_BIN=$(PY3_VENV)/bin/$(PY3)
+SESSION_SRC3=$(PY3_VENV)/lib/python3.4/site-packages/IPython/kernel/zmq/session.py
+KEY=`python3 -c "print(''.encode())"`
+KEY_FILE=`python3 -c "print(''.encode())"`
+PATCHED3=patches/patched
+
+
 PY2=python2.7
 PY2_VENV=./.venv-py2
 PY2_VENV_BIN=$(PY2_VENV)/bin/$(PY2)
@@ -79,3 +88,61 @@ demo-no-deps:
 
 py2notebook: IERLANG_DEMO=notebooks
 py2notebook: py2deps compile demo-base
+
+
+
+$(PY3_VENV_BIN):
+	@virtualenv --python=$(PY3) $(PY3_VENV)
+
+py3deps: $(PY3_VENV_BIN)
+	@. $(PY3_VENV)/bin/activate && \
+	pip install -r requirements.txt
+	@make $(PATCHED3)
+
+$(PATCHED3):
+	patch $(SESSION_SRC3) < patches/ierlang.patch
+	touch $(PATCHED3)
+
+py3shell-base:
+	@echo "Starting IErlang Console..."
+	. $(PY3_VENV)/bin/activate && \
+	ERL_LIBS=$(ERLLIBS) \
+	ipython3 console \
+	--KernelManager.kernel_cmd=$(OPT_KERN_MGR_CMD) \
+	--Session.key="" \
+	--Session.keyfile=""
+
+py3shell-no-deps:
+	@rebar compile skip_deps=true
+	@make PY3shell-base
+
+py3shell: py3deps compile py3shell-base
+
+erl3:
+	ERL_LIBS=$(ERLLIBS) erl
+
+py3clean:
+	rm -rf $(PY3_VENV) $(PATCHED3)
+
+erlclean3:
+	rebar clean
+
+clean3: py3clean erlclean
+
+demo3-base:
+	@echo "Starting IErlang Notebook Demo..."
+	@. $(PY3_VENV)/bin/activate && \
+	ERL_LIBS=$(ERLLIBS) \
+	ipython3 notebook $(IERLANG_DEMO) \
+	--KernelManager.kernel_cmd=$(OPT_KERN_MGR_CMD) \
+	--Session.key=$(KEY) \
+	--Session.keyfile=$(KEY_FILE)
+
+demo3: py3deps compile demo3-base
+
+demo3-no-deps:
+	@rebar compile skip_deps=true
+	@make demo3-base
+
+py3notebook: IERLANG_DEMO=notebooks
+py3notebook: py3deps compile demo3-base
