@@ -67,7 +67,7 @@ pyclean:
 erlclean:
 	rebar clean
 
-clean: pyclean erlclean
+clean: pyclean py3clean erlclean
 
 demo-base:
 	@echo "Starting IErlang Notebook Demo..."
@@ -86,7 +86,6 @@ demo-no-deps:
 
 py2notebook: IERLANG_DEMO=notebooks
 py2notebook: py2deps compile demo-base
-
 
 
 $(PY3_VENV_BIN):
@@ -116,16 +115,8 @@ py3shell-no-deps:
 
 py3shell: py3deps compile py3shell-base
 
-erl3:
-	ERL_LIBS=$(ERLLIBS) erl
-
 py3clean:
 	rm -rf $(PY3_VENV) $(PATCHED3)
-
-erlclean3:
-	rebar clean
-
-clean3: py3clean erlclean
 
 demo3-base:
 	@echo "Starting IErlang Notebook Demo..."

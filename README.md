@@ -19,14 +19,21 @@ to view IErlang Notebooks in [IPython's NBViewer](http://nbviewer.ipython.org/)
 * Erlang installed with ``erl`` and ``escript`` in your ``$PATH``
 * ``virtualenv`` installed
 * ``rebar`` installed
+* ``curl`` installed
 
 
 ## Installation
 
 You need only do the following to get started:
 
+For Python 2.7.*
 ```bash
 $ make demo
+```
+
+For Python 3.4.*
+```bash
+$ make demo3
 ```
 
 This will do the following:
