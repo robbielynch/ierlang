@@ -7,10 +7,8 @@ PY3=python3.4
 PY3_VENV=./.venv-py3
 PY3_VENV_BIN=$(PY3_VENV)/bin/$(PY3)
 SESSION_SRC3=$(PY3_VENV)/lib/python3.4/site-packages/IPython/kernel/zmq/session.py
-KEY=`python3 -c "print(''.encode())"`
-KEY_FILE=`python3 -c "print(''.encode())"`
+EMPTY_BYTE_STRING=`python3 -c "print(''.encode())"`
 PATCHED3=patches/patched
-
 
 PY2=python2.7
 PY2_VENV=./.venv-py2
@@ -109,8 +107,8 @@ py3shell-base:
 	ERL_LIBS=$(ERLLIBS) \
 	ipython3 console \
 	--KernelManager.kernel_cmd=$(OPT_KERN_MGR_CMD) \
-	--Session.key="" \
-	--Session.keyfile=""
+	--Session.key=$(EMPTY_BYTE_STRING) \
+	--Session.keyfile=$(EMPTY_BYTE_STRING)
 
 py3shell-no-deps:
 	@rebar compile skip_deps=true
@@ -135,8 +133,8 @@ demo3-base:
 	ERL_LIBS=$(ERLLIBS) \
 	ipython3 notebook $(IERLANG_DEMO) \
 	--KernelManager.kernel_cmd=$(OPT_KERN_MGR_CMD) \
-	--Session.key=$(KEY) \
-	--Session.keyfile=$(KEY_FILE)
+	--Session.key=$(EMPTY_BYTE_STRING) \
+	--Session.keyfile=$(EMPTY_BYTE_STRING)
 
 demo3: py3deps compile demo3-base
 
