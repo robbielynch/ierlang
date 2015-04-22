@@ -46,5 +46,6 @@ run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort}, {iopu
 %% Function to listen and respond on all sockets.
 %% Constant loop keeps the kernel alive.
 loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket)->
-    %% Keep listening and responding
+  %% Keep listening and responding
+  timer:sleep(5),
   loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket).
