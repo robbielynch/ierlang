@@ -6,4 +6,5 @@
 
 %% @doc The main function is automatically called upon script execution
 main([JsonFile|_]) ->
+  io:format("[ESCRIPT] Calling ierl_script...~n"),
   ierl_script:main(JsonFile).

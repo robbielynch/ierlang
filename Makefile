@@ -47,7 +47,7 @@ py2deps: $(PY2_VENV_BIN)
 	@make $(PATCHED)
 
 $(PATCHED):
-	patch $(SESSION_SRC) < patches/ierlang.patch
+	patch $(SESSION_SRC) < patches/ierlang31.patch
 	touch $(PATCHED)
 
 py2shell-base:
@@ -108,7 +108,7 @@ py3deps: $(PY3_VENV_BIN)
 	@make $(PATCHED3)
 
 $(PATCHED3):
-	patch $(SESSION_SRC3) < patches/ierlang.patch
+	patch $(SESSION_SRC3) < patches/ierlang31.patch
 	touch $(PATCHED3)
 
 py3shell-base:

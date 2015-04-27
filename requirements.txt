@@ -1,4 +1,5 @@
 pyzmq
 jinja2
 tornado
-ipython==2.3.1
+jsonschema
+ipython==3.1
