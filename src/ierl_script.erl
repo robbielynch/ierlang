@@ -26,6 +26,7 @@
 %%      iopub_port: 52247
 
 main(JsonFile) ->
+  io:format("~p~n", [JsonFile]),
   io:format("[ERLANG KERNEL]~n"),
   erlang:display(JsonFile),
   %% Read json file

@@ -18,9 +18,12 @@
     ierl_message_parser,
     ierl_message_sender,
     ierl_shell_server,
-    ierl_zmq_manager
+    ierl_zmq_manager,
+    ierlang,
+    ierlang_sup
    ]},
 
+  {mod, {ierlang, []}},
   %% All of the registered names the application uses. This can be ignored.
   {registered, []},
 
