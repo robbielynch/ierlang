@@ -30,7 +30,7 @@
   %% Applications that are to be started prior to this one. This can be ignored
   %% leave it alone unless you understand it well and let the .rel files in
   %% your release handle this.
-  {applications, [kernel, stdlib]},
+  {applications, [kernel, stdlib, erlzmq, mochiweb, uuid, sandbox]},
 
   %% OTP application loader will load, but not start, included apps. Again
   %% this can be ignored as well.  To load but not start an application it
