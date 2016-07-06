@@ -18,7 +18,8 @@ RUN set -ex                                                 && \
     apt-get update                                          && \
     apt-get install -y --no-install-recommends                 \
       python-pip                                               \
-      python-dev                                            && \
+      python-dev                                               \
+      vim                                                   && \
                                                                \
     echo 'Installing jupyter'                               && \
     pip install jupyter                                     && \

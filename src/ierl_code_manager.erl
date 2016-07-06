@@ -9,7 +9,6 @@
 %%%-------------------------------------------------------------------
 -module (ierl_code_manager).
 -export ([module_or_expression/2]).
--define(DEBUG, false).
 -define(RESTRICTED_MODE, false).
 
 %% @spec module_or_expression(list(), list()) -> tuple()
@@ -18,7 +17,7 @@
 module_or_expression([$-,$m,$o,$d,$u,$l,$e,$(|RestOfCode], _Bindings)->
   case ?RESTRICTED_MODE of
     true -> {ok, "Restricted"};
-    _Else ->
+    _    ->
       % If code is a module, do the following steps:
       % 1. Get module name.
       % 2. Save code to file
@@ -27,21 +26,22 @@ module_or_expression([$-,$m,$o,$d,$u,$l,$e,$(|RestOfCode], _Bindings)->
 
       % 1. Get module name
       ModuleName = get_module_name_from_code(RestOfCode),
-      print(ModuleName),
+      print:line(ModuleName),
 
       % 2. Save file in some folder TODO - Make separate folder for modules
       FullCode = lists:append("-module(", RestOfCode),
       FileName = lists:append(ModuleName, ".erl"),
       {ok, IODevice} = file:open(FileName, [write]), file:write(IODevice, FullCode), file:close(IODevice),
 
-      print("Trying to compile module"),
+      print:line("Trying to compile module"),
       % 3 + 4. Compile Module, Capture Result and Return
       CompileResult = os:cmd(lists:append("erlc ", FileName)),
-      print("Trying to compile module"),
-      print("Type of compileresult = "),
-      print(type_of(CompileResult)),
+      print:line("Trying to compile module"),
+      print:line("Type of compileresult = "),
+      print:line(type_of(CompileResult)),
       {ok,CompileResult}
   end;
+
 %% Operating System Command
 module_or_expression([$;,$;|Code], _Bindings)->
   case ?RESTRICTED_MODE of
@@ -51,6 +51,7 @@ module_or_expression([$;,$;|Code], _Bindings)->
       OsCmd2 = string:concat(OsCmd1, "\")."),
       execute(OsCmd2, _Bindings)
   end;
+
 %% Erlang Expression
 module_or_expression(Code, Bindings)->
   execute(Code, Bindings).
@@ -84,11 +85,11 @@ execute(Code, Bindings)->
         Exception:Reason ->
           E = lists:flatten(io_lib:format("~p", [Exception])),
           R = lists:flatten(io_lib:format("~p", [Reason])),
-          print("Exception = ", [E]),
-          print("Reason = ", [R]),
+          print:line("Exception = ", [E]),
+          print:line("Reason = ", [R]),
           {error, E, R}
       end;
-    _Else ->
+    _ ->
       %%% If restricted mode is disabled, evaluate any expression
       try
         {ok, Tokens, _} = erl_scan:string(Code),
@@ -103,14 +104,14 @@ execute(Code, Bindings)->
           float -> ReturnValue = Value;
           _ -> ReturnValue = lists:flatten(io_lib:format("~p", [Value]))
         end,
-        print("code execution return value = ", [ReturnValue]),
+        print:line("code execution return value = ", [ReturnValue]),
         {ok, ReturnValue, NewBindings}
       catch
         Exception:Reason ->
           E = lists:flatten(io_lib:format("~p", [Exception])),
           R = lists:flatten(io_lib:format("~p", [Reason])),
-          print("Exception = ", [E]),
-          print("Reason = ", [R]),
+          print:line("Exception = ", [E]),
+          print:line("Reason = ", [R]),
           {error, E, R}
       end
   end.
@@ -128,19 +129,4 @@ type_of(X) when is_pid(X)       -> pid;
 type_of(X) when is_port(X)      -> port;
 type_of(X) when is_reference(X) -> reference;
 type_of(X) when is_atom(X)      -> atom;
-
-type_of(_X)                     -> unknown.
-
-
-
-%% @doc Function to print stuff if debugging is set to true
-print(Stuff)->
-  case ?DEBUG of
-    true ->  io:format("~p~n", [Stuff]);
-    _Else -> "Do nothing"
-  end.
-print(Prompt, Stuff)->
-  case ?DEBUG of
-    true ->  io:format(string:concat(Prompt, "~p~n"), [Stuff]);
-    _Else -> "Do nothing"
-  end.
+type_of(_)                      -> unknown.

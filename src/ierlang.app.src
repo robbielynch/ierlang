@@ -1,29 +1,31 @@
 %% -*- erlang -*-
-{application, ierlang,
- [
+
+{application, ierlang, [
   %% A quick description of the application.
   {description, "IErlang Notebook"},
 
   %% The version of the application
-  {vsn, "0.0.3"},
+  {vsn, "0.1.0"},
 
   %% All modules used by the application.
-  {modules,
-   [
+  {modules, [
     ierl_code_manager,
     ierl_control_server,
     ierl_heartbeat_server,
-    ierl_script,
+    ierl_hmac,
     ierl_message_builder,
     ierl_message_parser,
     ierl_message_sender,
+    ierl_script,
     ierl_shell_server,
     ierl_zmq_manager,
     ierlang,
-    ierlang_sup
-   ]},
+    ierlang_sup,
+    print
+  ]},
 
   {mod, {ierlang, []}},
+
   %% All of the registered names the application uses. This can be ignored.
   {registered, []},
 
@@ -40,5 +42,4 @@
   %% configuration parameters similar to those in the config file specified
   %% on the command line. can be fetched with gas:get_env
   {env, []}
- ]
-}.
+]}.

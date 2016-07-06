@@ -9,15 +9,20 @@
 %%%-------------------------------------------------------------------
 -module(ierl_message_builder).
 -author("Robbie Lynch").
--export([generate_content_reply/2, generate_content_reply/1,
-         create_metadata/0, generate_header_reply/3]).
--define(DEBUG, false).
--define(USERNAME, "ierlang_kernel").
--define(IDLE_STATUS, "idle").
--define(BUSY_STATUS, "busy").
--define(STARTING_STATUS, "starting").
--define(OK_STATUS, "ok").
--define(ERROR_STATUS, "error").
+
+-define(USERNAME,        "ierlang_kernel").
+-define(IDLE_STATUS,     "idle"          ).
+-define(BUSY_STATUS,     "busy"          ).
+-define(STARTING_STATUS, "starting"      ).
+-define(OK_STATUS,       "ok"            ).
+-define(ERROR_STATUS,    "error"         ).
+
+-export([
+  create_metadata/0,
+  generate_content_reply/1,
+  generate_content_reply/2,
+  generate_header_reply/3
+]).
 
 %% @spec generate_header_reply(list(), list(), list()) -> list()
 %% @doc Creates the header for the message being sent to IPython
@@ -29,8 +34,8 @@ generate_header_reply(Session, MessageType, Date)->
     {msg_id, uuid:to_string(uuid:v4())},
     {msg_type, MessageType}
   ]},
-  Header = mochijson2:encode(HeaderPropList),
-  Header.
+
+  mochijson2:encode(HeaderPropList).
 
 %% @spec generate_content_reply(atom()) -> list()
 %% @doc Creates the content reply for the busy status sent over the
@@ -38,28 +43,19 @@ generate_header_reply(Session, MessageType, Date)->
 generate_content_reply(busy)->
   %%Should be sent before the execution of the code
   Content = {struct, [{execution_state, ?BUSY_STATUS}]},
-  ContentJson = mochijson2:encode(Content),
-  ContentJson;
 
-%% @spec generate_content_reply(atom()) -> list()
-%% @doc Creates the content reply for the idle status sent over the
-%%      iopub socket.
+  mochijson2:encode(Content);
+
 generate_content_reply(idle)->
   Content = {struct,    [     {execution_state, ?IDLE_STATUS}    ]},
-  ContentJson = mochijson2:encode(Content),
-  ContentJson;
 
-%% @spec generate_content_reply(atom()) -> list()
-%% @doc Creates the content reply for the starting status sent over the
-%%      iopub socket.
+  mochijson2:encode(Content);
+
 generate_content_reply(starting)->
   Content = {struct,    [     {execution_state, ?STARTING_STATUS}    ]},
-  ContentJson = mochijson2:encode(Content),
-  ContentJson;
 
-%% @spec generate_content_reply(atom()) -> list()
-%% @doc Creates the content reply for the kernel_info_reply sent over the
-%%      shell socket.
+  mochijson2:encode(Content);
+
 generate_content_reply(kernel_info_reply)->
 %    Version of messaging protocol (mandatory).
 %   The first integer indicates major version.  It is incremented when
@@ -96,8 +92,6 @@ generate_content_reply(kernel_info_reply)->
   ReplyJson = mochijson2:encode(Content),
   ReplyJson.
 
-%% @doc Creates the content reply for a successful execute_reply
-%%      sent over the shell socket.
 generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExprs})->
   Content = {struct,    [
     {status, ?OK_STATUS},
@@ -109,11 +103,8 @@ generate_content_reply(execute_reply, {"ok", ExecutionCount, _UserVars, _UserExp
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
-%% @spec generate_content_reply(atom(), tuple()) -> list()
-%% @doc Creates the content reply for an unsuccessful execute_reply
-%%      sent over the shell socket.
 generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionName, _ExceptionValue, Traceback})->
-  print("in generate_content_reply for execute reply error"),
+  print:line("in generate_content_reply for execute reply error"),
   Content = {struct,    [
     {status, ?ERROR_STATUS},
     {execution_count, ExecutionCount},
@@ -121,13 +112,10 @@ generate_content_reply(execute_reply_error, {"error", ExecutionCount, ExceptionN
     {evalue, "ERROR"},
     {traceback, Traceback}
   ]},
-  print("converting to json"),
+  print:line("converting to json"),
   ContentJson = mochijson2:encode(Content),
   ContentJson;
 
-%% @spec generate_content_reply(atom(), tuple()) -> list()
-%% @doc Creates the content reply for pyout
-%%      sent over the iopub socket.
 generate_content_reply(pyout, {ExecutionCount, CodeOutput})->
   PyoutContent =
   try
@@ -161,9 +149,6 @@ generate_content_reply(pyout, {ExecutionCount, CodeOutput})->
   end,
   PyoutContent;
 
-%% @spec generate_content_reply(atom(), tuple()) -> list()
-%% @doc Creates the content reply for pyin
-%%      sent over the iopub socket.
 generate_content_reply(pyin, {Code, ExecutionCount})->
   Content = {struct,    [     {execution_count, ExecutionCount},
     {code, Code}
@@ -171,9 +156,6 @@ generate_content_reply(pyin, {Code, ExecutionCount})->
   PyinContent = mochijson2:encode(Content),
   PyinContent;
 
-%% @spec generate_content_reply(atom(), tuple()) -> list()
-%% @doc Creates the content reply for pyerr
-%%      sent over the iopub socket.
 generate_content_reply(pyerr, {_ExceptionName, ExecutionCount, _ExceptionValue, Traceback})->
   Content = {struct,    [
     {execution_count, ExecutionCount},
@@ -181,12 +163,9 @@ generate_content_reply(pyerr, {_ExceptionName, ExecutionCount, _ExceptionValue, 
     {evalue, "ERROR"},
     {traceback, Traceback}
   ]},
-  PyerrContent = mochijson2:encode(Content),
-  PyerrContent;
 
-%% @spec generate_content_reply(atom(), tuple()) -> list()
-%% @doc Creates the content reply for display_data
-%%      sent over the iopub socket.
+  mochijson2:encode(Content);
+
 generate_content_reply(display_data, {Source, RawData, _MetaData})->
   % Create the data dictionary with mime types as keys
   DataStruct = {struct, [
@@ -201,24 +180,11 @@ generate_content_reply(display_data, {Source, RawData, _MetaData})->
     {data, Data},
     {metadata, {}}
   ]},
-  DisplayContent = mochijson2:encode(Content),
-  DisplayContent.
+
+  mochijson2:encode(Content).
 
 %% @spec create_metadata() -> list()
 %% @doc Creates the metadata for the outgoing message
 create_metadata()->
   Metadata = {struct,    []},
-  Md = mochijson2:encode(Metadata),
-  Md.
-
-%% @doc Function to print stuff if debugging is set to true
-print(Stuff)->
-  case ?DEBUG of
-    true ->  io:format("~p~n", [Stuff]);
-    _Else -> "Do nothing"
-  end.
-print(Prompt, Stuff)->
-  case ?DEBUG of
-    true ->  io:format(string:concat(Prompt, "~p~n"), [Stuff]);
-    _Else -> "Do nothing"
-  end.
+  mochijson2:encode(Metadata).

@@ -129,8 +129,5 @@ docker-here ierlang bash
 Compile:
 
 ```bash
-rebar3 compile
-rebar3 release
-
-./_build/default/rel/r1/bin/r1 console
+rm -rf _build/default/rel/ && rm -rf _build/default/lib/ierlang/ && rebar3 release
 ```
