@@ -26,13 +26,13 @@
 
 %% @spec generate_header_reply(list(), list(), list()) -> list()
 %% @doc Creates the header for the message being sent to IPython
-generate_header_reply(Session, MessageType, Date)->
+generate_header_reply(Session, MessageType, Date) ->
   HeaderPropList = {struct, [
-    {date, Date},
-    {username, ?USERNAME},
-    {session, Session},
-    {msg_id, uuid:to_string(uuid:v4())},
-    {msg_type, MessageType}
+    {date,     Date                       },
+    {username, ?USERNAME                  },
+    {session,  Session                    },
+    {msg_id,   uuid:to_string(uuid:v4())  },
+    {msg_type, list_to_binary(MessageType)}
   ]},
 
   mochijson2:encode(HeaderPropList).
@@ -70,7 +70,7 @@ generate_content_reply(kernel_info_reply)->
 %   'rc1' in development version.  It is an empty string for
 %   released version.
 %   'ipython_version': [int, int, int, str],
-  IPythonVersion = [2, 0, 0, "dev"],
+  IPythonVersion = [2, 0, 0, <<"dev">>],
 %   Language version number (mandatory).
 %   It is Python version number (e.g., [2, 7, 3]) for the kernel
 %   included in IPython.
@@ -79,7 +79,7 @@ generate_content_reply(kernel_info_reply)->
 %   Programming language in which kernel is implemented (mandatory).
 %   Kernel included in IPython returns 'python'.
 %   'language': str,
-  Language = "erlang",
+  Language = <<"erlang">>,
 
 %    Build the proplist to be converted to json
   Content = {struct,    [
