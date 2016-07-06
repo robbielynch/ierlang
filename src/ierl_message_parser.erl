@@ -9,45 +9,39 @@
 -module(ierl_message_parser).
 -author("Robbie Lynch").
 
--export([parse_content/2, parse_header/1]).
+-export([parse/2]).
 
-%% @spec parse_content(list(), atom()) -> tuple()
-%% @doc Parses and extracts the Content items from the IPython execute_request message
-parse_content(Content, execute_request)->
-  print:line("Content: ", Content),
+parse(Content, Type) ->
+  {struct, PropList} = mochijson2:decode(Content),
 
-  {struct, MsgPropList} = mochijson2:decode(Content),
+  case Type of
+    execute_request  -> parse_execute_request(PropList);
+    complete_request -> parse_complete_request(PropList);
+    header           -> parse_header(PropList)
+  end.
 
-  Code            = binary_to_list(proplists:get_value(<<"code">>, MsgPropList)),
-  Silent          = proplists:get_value(<<"silent">>, MsgPropList),
-  StoreHistory    = proplists:get_value(<<"store_history">>, MsgPropList),
-  UserVariables   = proplists:get_value(<<"user_variables">>, MsgPropList),
-  UserExpressions = proplists:get_value(<<"user_expressions">>, MsgPropList),
-  AllowStdin      = proplists:get_value(<<"allow_stdin">>, MsgPropList),
+parse_execute_request(PropList) ->
+  Code            = binary_to_list(proplists:get_value(<<"code">>, PropList)),
+  Silent          = proplists:get_value(<<"silent">>, PropList),
+  StoreHistory    = proplists:get_value(<<"store_history">>, PropList),
+  UserVariables   = proplists:get_value(<<"user_variables">>, PropList),
+  UserExpressions = proplists:get_value(<<"user_expressions">>, PropList),
+  AllowStdin      = proplists:get_value(<<"allow_stdin">>, PropList),
 
-  {ok, Code, Silent, StoreHistory, UserVariables, UserExpressions, AllowStdin};
+  {ok, Code, Silent, StoreHistory, UserVariables, UserExpressions, AllowStdin}.
 
-parse_content(Content, complete_request)->
-  print:line("Content: ", Content),
-
-  {struct, MsgPropList} = mochijson2:decode(Content),
-
-  Text      = binary_to_list(proplists:get_value(<<"text">>, MsgPropList)),
-  Line      = proplists:get_value(<<"line">>, MsgPropList),
-  Block     = proplists:get_value(<<"block">>, MsgPropList),
-  CursorPos = proplists:get_value(<<"cursor_pos">>, MsgPropList),
+parse_complete_request(PropList) ->
+  Text      = binary_to_list(proplists:get_value(<<"text">>, PropList)),
+  Line      = proplists:get_value(<<"line">>, PropList),
+  Block     = proplists:get_value(<<"block">>, PropList),
+  CursorPos = proplists:get_value(<<"cursor_pos">>, PropList),
 
   {ok, Text, Line, Block, CursorPos}.
 
-%% @spec parse_header(list()) -> tuple()
-%% @doc Parses and extracts the header items from the IPython header message.
-parse_header(Header)->
-  {struct, HeaderPropList} = mochijson2:decode(Header),
-
-  %Date       = extract_date_from_header(HeaderPropList),
-  Username    = binary_to_list(proplists:get_value(<<"username">>, HeaderPropList)),
-  Session     = binary_to_list(proplists:get_value(<<"session">>, HeaderPropList)),
-  MessageID   = binary_to_list(proplists:get_value(<<"msg_id">>, HeaderPropList)),
-  MessageType = binary_to_list(proplists:get_value(<<"msg_type">>, HeaderPropList)),
+parse_header(PropList) ->
+  Username    = binary_to_list(proplists:get_value(<<"username">>, PropList)),
+  Session     = binary_to_list(proplists:get_value(<<"session">>, PropList)),
+  MessageID   = binary_to_list(proplists:get_value(<<"msg_id">>, PropList)),
+  MessageType = binary_to_list(proplists:get_value(<<"msg_type">>, PropList)),
 
   {ok, Username, Session, MessageID, MessageType, ""}.
