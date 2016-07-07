@@ -116,7 +116,6 @@ execute(Code, Bindings)->
       end
   end.
 
-
 type_of(X) when is_integer(X)   -> integer;
 type_of(X) when is_float(X)     -> float;
 type_of(X) when is_list(X)      -> list;

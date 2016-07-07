@@ -9,6 +9,8 @@
 -module(ierl_message_parser).
 -author("Robbie Lynch").
 
+-include("records.hrl").
+
 -export([parse/2]).
 
 parse(Content, Type) ->
@@ -21,27 +23,27 @@ parse(Content, Type) ->
   end.
 
 parse_execute_request(PropList) ->
-  Code            = binary_to_list(proplists:get_value(<<"code">>, PropList)),
-  Silent          = proplists:get_value(<<"silent">>, PropList),
-  StoreHistory    = proplists:get_value(<<"store_history">>, PropList),
-  UserVariables   = proplists:get_value(<<"user_variables">>, PropList),
-  UserExpressions = proplists:get_value(<<"user_expressions">>, PropList),
-  AllowStdin      = proplists:get_value(<<"allow_stdin">>, PropList),
-
-  {ok, Code, Silent, StoreHistory, UserVariables, UserExpressions, AllowStdin}.
+  #parsed_code{
+    code             = binary_to_list(proplists:get_value(<<"code">>, PropList)),
+    silent           = proplists:get_value(<<"silent">>, PropList),
+    store_history    = proplists:get_value(<<"store_history">>, PropList),
+    user_variables   = proplists:get_value(<<"user_variables">>, PropList),
+    user_expressions = proplists:get_value(<<"user_expressions">>, PropList),
+    allow_stdin      = proplists:get_value(<<"allow_stdin">>, PropList)
+  }.
 
 parse_complete_request(PropList) ->
-  Text      = binary_to_list(proplists:get_value(<<"text">>, PropList)),
-  Line      = proplists:get_value(<<"line">>, PropList),
-  Block     = proplists:get_value(<<"block">>, PropList),
-  CursorPos = proplists:get_value(<<"cursor_pos">>, PropList),
-
-  {ok, Text, Line, Block, CursorPos}.
+  #parsed_text{
+    text       = binary_to_list(proplists:get_value(<<"text">>, PropList)),
+    line       = proplists:get_value(<<"line">>, PropList),
+    block      = proplists:get_value(<<"block">>, PropList),
+    cursor_pos = proplists:get_value(<<"cursor_pos">>, PropList)
+  }.
 
 parse_header(PropList) ->
-  Username    = binary_to_list(proplists:get_value(<<"username">>, PropList)),
-  Session     = binary_to_list(proplists:get_value(<<"session">>, PropList)),
-  MessageID   = binary_to_list(proplists:get_value(<<"msg_id">>, PropList)),
-  MessageType = binary_to_list(proplists:get_value(<<"msg_type">>, PropList)),
-
-  {ok, Username, Session, MessageID, MessageType, ""}.
+  #parsed_header{
+    username     = binary_to_list(proplists:get_value(<<"username">>, PropList)),
+    uuid         = binary_to_list(proplists:get_value(<<"session">>, PropList)),
+    message_id   = binary_to_list(proplists:get_value(<<"msg_id">>, PropList)),
+    message_type = binary_to_list(proplists:get_value(<<"msg_type">>, PropList))
+  }.

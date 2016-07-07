@@ -10,15 +10,7 @@
 -module (ierl_shell_server).
 -author("Robbie Lynch").
 
--record(reply_message, {
-  uuid,
-  delim          = <<"<IDS|MSG>">>,
-  hmac           = <<"">>,
-  header,
-  parent_header,
-  metadata       = <<"{}">>,
-  content
-}).
+-include("records.hrl").
 
 -export ([start/3]).
 
@@ -28,37 +20,36 @@
 
 %%% @doc Starts the shell server
 start(ShellSocket, IOPubSocket, Key) ->
-  loop(ShellSocket, IOPubSocket, 1, Key).
+  State = #shell_state{
+    shell_socket    = ShellSocket,
+    io_pub_socket   = IOPubSocket,
+    key             = Key,
+    bindings        = [],
+    execution_count = 1
+  },
+
+  loop(State).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
-loop(ShellSocket, IOPubSocket, ExeCount, Key) ->
-  shell_listener(ShellSocket, IOPubSocket, ExeCount, [], Key),
+loop(State) ->
+  NewState = handle_new_request(State),
 
-  loop(ShellSocket, IOPubSocket, ExeCount + 1, Key).
+  loop(NewState).
 
-%%% @doc Listens for messages on the Shell Socket, parses and
-%%%      acts upon the message contents, then replies to IPython
-shell_listener(ShellSocket, IOPubSocket, ExeCount, Bindings, Key) ->
-  {Header, Content} = receive_all(ShellSocket),
+handle_new_request(State) ->
+  Request      = receive_request(State#shell_state.shell_socket),
+  ParsedHeader = Request#request.parsed_header,
 
-  case ierl_message_parser:parse([Header], header) of
-    {ok, _Username, UUID, _MessageID, "kernel_info_request", Date} ->
-      send_reply(
-        UUID, Date, Header, Key,
-        ShellSocket, "kernel_info_reply", kernel_info_reply, {}
-      );
-
-    {ok, _Username, UUID, _MessageID, "execute_request", Date} ->
-      handle_execute_request(Session, Date, Header, Content, Key);
-
-    {ok, _Username, UUID, _MessageID, "complete_request", _Date} ->
-      handle_complete_request(Session, Date, Header, Key)
+  case ParsedHeader#parsed_header.message_type of
+    "kernel_info_request" -> handle_kernel_info_request(State, Request);
+    "execute_request"     -> handle_execute_request(State, Request);
+    "complete_request"    -> handle_complete_request(State, Request)
   end.
 
-receive_all(ShellSocket) ->
+receive_request(ShellSocket) ->
   {ok, _UUID}         = erlzmq:recv(ShellSocket),
   {ok, _Delim}        = erlzmq:recv(ShellSocket),
   {ok, _Hmac}         = erlzmq:recv(ShellSocket),
@@ -67,9 +58,20 @@ receive_all(ShellSocket) ->
   {ok, _Metadata}     = erlzmq:recv(ShellSocket),
   {ok, Content}       = erlzmq:recv(ShellSocket),
 
-  {Header, Content}.
+  ParsedHeader = ierl_message_parser:parse([Header], header),
 
-handle_execute_request(UUID, Date, Header, Content, Key) ->
+  #request{
+    header         = Header,
+    content        = Content,
+    parsed_header  = ParsedHeader
+  }.
+
+handle_kernel_info_request(State, Request) ->
+  ierl_message_sender:send(State, Request, "kernel_info_reply", kernel_info_reply, {}),
+
+  State.
+
+handle_execute_request(State, Request) ->
   % 1. SEND BUSY STATUS ON IOPUB
   % 2. PARSE EXECUTE_REQUEST CONTENT
   % 3. SEND PYIN ON IOPUB
@@ -79,120 +81,72 @@ handle_execute_request(UUID, Date, Header, Content, Key) ->
   % 7. SEND IDLE STATUS MESSAGE ON IOPUB
 
   %%% 1. SEND BUSY STATUS ON IOPUB
-  send_reply(
-    UUID, Date, Header, Key,
-    IOPubSocket, "status", busy, {}
-  ),
+  ierl_message_sender:send(State, Request, "status", busy, {}),
 
   %%% 2. PARSE EXECUTE_REQUEST CONTENT
-  {ok, Code, _, _, _, _, _} = ierl_message_parser:parse(Content, execute_request),
+  ParsedContent = ierl_message_parser:parse(Content, execute_request),
 
   %%% 3. SEND PYIN ON IOPUB
-  ierl_message_sender:send_pyin(IOPubSocket, Result, [Session, Header, Date]),
+  ierl_message_sender:send_pyin(State, Request, Result),
 
   %%% 4. EVALUATE THE ERLANG CODE
-  case ierl_code_manager:module_or_expression(Code, Bindings) of
-    {ok, CompileResultList} ->
-      handle_compilation_result();
+  CodeEvaluation = ierl_code_manager:module_or_expression(State, ParsedContent),
 
-    {ok, Value, NewBindings} ->
-      handle_code_execution();
-
-    {error, Exception, Reason} ->
-      handle_code_exception();
+  case CodeEvaluation of
+    {ok, CompileResultList}    -> handle_compilation_result(State, Request, CompileResultList);
+    {ok, Value, NewBindings}   -> handle_code_execution(State, Request, Value, NewBindings);
+    {error, Exception, Reason} -> handle_code_exception(State, Request, Exception, Reason)
   end.
 
-handle_compilation_result(),
+handle_compilation_result(State, Request, CompileResultList) ->
   CompiledResult = case CompileResultList of
     []             -> "Successfully Compiled";
     CompileMessage -> CompileMessage
   end,
 
   %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
-  send_reply(
-    UUID, Date, Header, Key,
-    ShellSocket, "execute_reply", execute_reply, {"ok", ExeCount, {}, {}}
-  ).
+  ierl_message_sender:send(State, Request, "execute_reply", execute_reply, {"ok", ExeCount, {}, {}}),
 
   %%% 6. SEND PYOUT MESSAGE ON IOPUB
-  ierl_message_sender:send_pyout(IOPubSocket, Result, [Session, Header, Date, ExeCount]).
+  ierl_message_sender:send_pyout(State, Request, Result),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  send_reply(
-    UUID, Date, ParentHeader, Key,
-    IOPubSocket, "status", idle, {}
-  ).
+  ierl_message_sender:send(State, Request, "status", idle, {}),
 
-handle_code_execution() ->
+  State.
+
+handle_code_execution(State) ->
   %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
-  send_reply(
-    UUID, Date, ParentHeader, Key,
-    ShellSocket, "execute_reply", execute_reply, {"ok", ExeCount, {}, {}}
-  ).
+  ierl_message_sender:send(State, Request, "execute_reply", execute_reply, {"ok", ExeCount, {}, {}}),
 
   %%% 6. SEND PYOUT MESSAGE ON IOPUB
-  ierl_message_sender:send_pyout(IOPubSocket, Result, [Session, Header, Date, ExeCount]).
+  ierl_message_sender:send_pyout(State, Request, Result),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  send_reply(
-    UUID, Date, ParentHeader, Key,
-    IOPubSocket, "status", idle, {}
-  ).
+  ierl_message_sender:send(State, Request, "status", idle, {}),
 
-handle_code_exception() ->
+  State.
+
+handle_code_exception(State) ->
   %% TODO - each char of Traceback being output on separate line
   %% TODO - Traceback appears as a list of a million chars :/
   %% Leaving Traceback param as an empty list for now, and outputting via pyout
   %% reply_type, status, exe_count, excetpionName, ExceptionValue, TracebackList
 
   %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
-  send_reply(
-    UUID, Date, ParentHeader, Key,
-    ShellSocket, "execute_reply", execute_reply_error, {"error", ExeCount, Exception, Reason, []}
-  ).
+  ierl_message_sender:send(State, Request, "execute_reply", execute_reply_error, {"error", ExeCount, Exception, Reason, []}),
 
   %%% 6. SEND PYOUT MESSAGE ON IOPUB
-  ierl_message_sender:send_pyout(IOPubSocket, Result, [Session, Header, Date, ExeCount]).
+  ierl_message_sender:send_pyout(State, Request, Result),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  send_reply(
-    UUID, Date, ParentHeader, Key,
-    IOPubSocket, "status", idle, {}
-  ).
+  ierl_message_sender:send(State, Request, "status", idle, {}),
 
-handle_complete_request(Session, Date, Header, Key) ->
+  State.
+
+handle_complete_request(State, Request) ->
   case ierl_message_parser:parse(Content, complete_request) of
     {ok, _Text, _Line, _Block, _CursorPos} ->
       %% TODO - do something with complete_request
       print:line("TODO")
   end.
-
-%%====================================================================
-%% Message sending
-%%====================================================================
-
-send_reply(UUID, Date, ParentHeader, Key, Socket, HeaderType, ContentType, ContentArgs) ->
-  NewHeader  = ierl_message_builder:generate_header(UUID, HeaderType, Date),
-  NewContent = ierl_message_builder:generate_content(ContentType, ContentArgs),
-
-  Data = {UUID, NewHeader, ParentHeader, NewContent},
-
-  send_signed_reply(Socket, Data, Key).
-
-
-send_signed_reply(Socket, Data, Key) ->
-  {UUID, Header, ParentHeader, Content} = Data,
-
-  Metadata = ierl_message_builder:generate_content(metadata),
-  Hmac     = ierl_hmac:encode([Header, ParentHeader, Metadata, Content], Key),
-
-  Reply = #reply_message{
-    uuid          = UUID,
-    hmac          = Hmac,
-    header        = Header,
-    parent_header = ParentHeader,
-    metadata      = Metadata,
-    content       = Content
-  },
-
-  ierl_message_sender:send_reply(Reply, Socket).

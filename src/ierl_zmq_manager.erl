@@ -25,7 +25,7 @@ run(
     {ip,               IP             },
     {transport,        Transport      }
   ]
-)->
+) ->
   ConnectionStringBuilder1 = string:concat(binary_to_list(Transport),"://"),
   ConnectionStringBuilder2 = string:concat(binary_to_list(IP),":"),
   ConnectionString         = string:concat(ConnectionStringBuilder1, ConnectionStringBuilder2),
@@ -58,4 +58,5 @@ run(
 loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket) ->
   %% Keep listening and responding
   timer:sleep(5),
+
   loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket).
