@@ -123,11 +123,17 @@ alias docker-root-here='docker run --rm -it -v "$PWD":/work -w /work'
 Launch a container:
 
 ```bash
-docker-here ierlang bash
+docker-here -p 8888:8888 ierlang bash
 ```
 
 Compile:
 
 ```bash
 rm -rf _build/default/rel/ && rm -rf _build/default/lib/ierlang/ && rebar3 release
+```
+
+Start:
+
+```bash
+jupyter notebook --ip=0.0.0.0 --notebook-dir=/work/notebooks/
 ```

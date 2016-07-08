@@ -34,9 +34,9 @@ generate_header(Session, MessageType, Date) ->
 
 generate_content(Type, Args) ->
   Content = case Type of
-    busy                -> {struct, [{execution_state, "busy"    }]};
-    idle                -> {struct, [{execution_state, "idle"    }]};
-    starting            -> {struct, [{execution_state, "starting"}]};
+    busy                -> {struct, [{execution_state, <<"busy">>    }]};
+    idle                -> {struct, [{execution_state, <<"idle">>    }]};
+    starting            -> {struct, [{execution_state, <<"starting">>}]};
     metadata            -> {struct, []};
     kernel_info_reply   -> kernel_info_reply();
     execute_reply       -> execute_reply(Args);
@@ -63,7 +63,7 @@ kernel_info_reply() ->
 
 execute_reply({"ok", ExecutionCount, _UserVars, _UserExprs}) ->
   {struct, [
-    {status,           "ok"},
+    {status,           <<"ok">>},
     {execution_count,  ExecutionCount},
     {payload,          []},
     {user_variables,   {}},
@@ -72,10 +72,10 @@ execute_reply({"ok", ExecutionCount, _UserVars, _UserExprs}) ->
 
 execute_reply_error({"error", ExecutionCount, ExceptionName, _ExceptionValue, Traceback}) ->
   {struct, [
-    {status,          "error"},
+    {status,          <<"error">>},
     {execution_count, ExecutionCount},
     {ename,           ExceptionName},
-    {evalue,          "ERROR"},
+    {evalue,          <<"ERROR">>},
     {traceback,       Traceback}
   ]}.
 
@@ -100,15 +100,15 @@ pyout({ExecutionCount, CodeOutput}) ->
       _:_ ->
         FrmtCode = io_lib:format("~p", [CodeOutput]),
         FrmtData = {struct, [
-          {'text/html', FrmtCode},
+          {'text/html',  FrmtCode},
           {'text/plain', FrmtCode}
         ]},
         FrmtDataJson = mochijson2:encode(FrmtData),
 
         FrmtContent = {struct,    [
         {execution_count, ExecutionCount},
-        {data, FrmtDataJson},
-        {metadata, {}}
+        {data,            FrmtDataJson},
+        {metadata,        {}}
         ]},
 
         mochijson2:encode(FrmtContent)
@@ -124,14 +124,14 @@ pyin({Code, ExecutionCount}) ->
 pyerr({_ExceptionName, ExecutionCount, _ExceptionValue, Traceback}) ->
   {struct, [
     {execution_count, ExecutionCount},
-    {ename,           "error"       },
-    {evalue,          "ERROR"       },
+    {ename,           <<"error">>       },
+    {evalue,          <<"ERROR">>       },
     {traceback,       Traceback     }
   ]}.
 
 display_data({Source, RawData, _MetaData}) ->
   DataStruct = {struct, [
-    {'text/html', RawData},
+    {'text/html',  RawData},
     {'text/plain', RawData}
   ]},
 
@@ -139,7 +139,7 @@ display_data({Source, RawData, _MetaData}) ->
 
   % Create the content
   Content = {struct,    [
-    {source, Source},
-    {data, Data},
+    {source,   Source},
+    {data,     Data},
     {metadata, {}}
   ]}.
