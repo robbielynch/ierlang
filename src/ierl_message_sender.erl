@@ -13,72 +13,49 @@
 -include("records.hrl").
 
 -export([
-  send/4,
-  send_busy/2,
-  send_pyerr/6,
-  send_pyin/3,
-  send_pyout/3,
+  send_by_shell/5,
+  send_by_io/5
 ]).
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-send(State, Request, ContentType, ContentArgs) ->
-  ParsedHeader = Request#request.parsed_header,
-  NewHeader    = ierl_message_builder:generate_header(UUID, HeaderType, Date),
-  NewContent   = ierl_message_builder:generate_content(ContentType, ContentArgs),
+send_by_shell(State, Request, HeaderType, ContentType, ContentArgs) ->
+  Data = format_data(Request, HeaderType, ContentType, ContentArgs),
 
-  Data = {UUID, NewHeader, ParentHeader, NewContent},
+  send_signed_reply(
+    State#shell_state.shell_socket,
+    Data,
+    State#shell_state.key
+  ).
 
-  send_signed_reply(Socket, Data, Key).
+send_by_io(State, Request, HeaderType, ContentType, ContentArgs) ->
+  Data = format_data(Request, HeaderType, ContentType, ContentArgs),
 
-send_busy(State, Request) ->
-
-
-%%% @doc Send a pyerr message
-send_pyerr(IOPubSocket, ExceptionName, ExecutionCount, ExceptionVal,
-                          Traceback, [Session, IPythonHeader, Date])->
-  PyerrReply = #reply_message{
-    uuid          = Session,
-    header        = ierl_message_builder:generate_header(Session, "pyerr", Date),
-    parent_header = IPythonHeader,
-    content       = ierl_message_builder:generate_content(pyerr, {ExceptionName,
-      ExecutionCount, ExceptionVal, Traceback})
-  },
-
-  send_reply(PyerrReply, IOPubSocket).
-
-%%% @doc Send a pyin message
-send_pyin(IOPubSocket, CodeInput, [Session, IPythonHeader, Date])->
-  PyinReply = #reply_message{
-    uuid          = Session,
-    header        = ierl_message_builder:generate_header(Session, "pyin", Date),
-    parent_header = IPythonHeader,
-    content       = ierl_message_builder:generate_content(pyin, {CodeInput, 1})
-  },
-
-  send_reply(PyinReply, IOPubSocket).
-
-%%% @doc Send a pyout message
-send_pyout(IOPubSocket, CodeOutput, [Session, IPythonHeader, Date, ExeCount])->
-  PyoutReply = #reply_message{
-    uuid          = Session,
-    header        = ierl_message_builder:generate_header(Session, "pyout", Date),
-    parent_header = IPythonHeader,
-    content       = ierl_message_builder:generate_content(pyout, {ExeCount, CodeOutput})
-  },
-
-  send_reply(PyoutReply, IOPubSocket).
+  send_signed_reply(
+    State#shell_state.io_pub_socket,
+    Data,
+    State#shell_state.key
+  ).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 
+format_data(Request, HeaderType, ContentType, ContentArgs) ->
+  ParsedHeader = Request#request.parsed_header,
+  UUID         = ParsedHeader#parsed_header.uuid,
+  Date         = ParsedHeader#parsed_header.date,
+  NewHeader    = ierl_message_builder:generate_header(UUID, HeaderType, Date),
+  NewContent   = ierl_message_builder:generate_content(ContentType, ContentArgs),
+
+  {UUID, NewHeader, Request#request.header, NewContent}.
+
 send_signed_reply(Socket, Data, Key) ->
   {UUID, Header, ParentHeader, Content} = Data,
 
-  Metadata = ierl_message_builder:generate_content(metadata),
+  Metadata = ierl_message_builder:generate_content(metadata, {}),
   Hmac     = ierl_hmac:encode([Header, ParentHeader, Metadata, Content], Key),
 
   Reply = #reply_message{

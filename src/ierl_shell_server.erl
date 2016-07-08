@@ -67,7 +67,13 @@ receive_request(ShellSocket) ->
   }.
 
 handle_kernel_info_request(State, Request) ->
-  ierl_message_sender:send(State, Request, "kernel_info_reply", kernel_info_reply, {}),
+  ierl_message_sender:send_by_shell(
+    State,
+    Request,
+    "kernel_info_reply",
+    kernel_info_reply,
+    {}
+  ),
 
   State.
 
@@ -81,13 +87,18 @@ handle_execute_request(State, Request) ->
   % 7. SEND IDLE STATUS MESSAGE ON IOPUB
 
   %%% 1. SEND BUSY STATUS ON IOPUB
-  ierl_message_sender:send(State, Request, "status", busy, {}),
+  ierl_message_sender:send_by_io(State, Request, "status", busy, {}),
 
   %%% 2. PARSE EXECUTE_REQUEST CONTENT
-  ParsedContent = ierl_message_parser:parse(Content, execute_request),
+  ParsedContent = ierl_message_parser:parse(
+    Request#request.content,
+    execute_request
+  ),
 
   %%% 3. SEND PYIN ON IOPUB
-  ierl_message_sender:send_pyin(State, Request, Result),
+  PyinArgs = {ParsedContent#parsed_code.code, 1},
+
+  ierl_message_sender:send_by_io(State, Request, "pyin", pyin, PyinArgs),
 
   %%% 4. EVALUATE THE ERLANG CODE
   CodeEvaluation = ierl_code_manager:module_or_expression(State, ParsedContent),
@@ -96,7 +107,9 @@ handle_execute_request(State, Request) ->
     {ok, CompileResultList}    -> handle_compilation_result(State, Request, CompileResultList);
     {ok, Value, NewBindings}   -> handle_code_execution(State, Request, Value, NewBindings);
     {error, Exception, Reason} -> handle_code_exception(State, Request, Exception, Reason)
-  end.
+  end,
+
+  State#shell_state{execution_count = State#shell_state.execution_count + 1}.
 
 handle_compilation_result(State, Request, CompileResultList) ->
   CompiledResult = case CompileResultList of
@@ -104,48 +117,78 @@ handle_compilation_result(State, Request, CompileResultList) ->
     CompileMessage -> CompileMessage
   end,
 
+  ExeCount = State#shell_state.execution_count,
+
   %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
-  ierl_message_sender:send(State, Request, "execute_reply", execute_reply, {"ok", ExeCount, {}, {}}),
+  ReplyArgs = {"ok", ExeCount, {}, {}},
+
+  ierl_message_sender:send_by_shell(
+    State,
+    Request,
+    "execute_reply",
+    execute_reply,
+    ReplyArgs
+  ),
 
   %%% 6. SEND PYOUT MESSAGE ON IOPUB
-  ierl_message_sender:send_pyout(State, Request, Result),
+  PyoutArgs = {ExeCount, CompiledResult},
+
+  ierl_message_sender:send_by_io(State, Request, "pyout", pyout, PyoutArgs),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  ierl_message_sender:send(State, Request, "status", idle, {}),
+  ierl_message_sender:send_by_io(State, Request, "status", idle, {}).
 
-  State.
+handle_code_execution(State, Request, Value, NewBindings) ->
+  ExeCount = State#shell_state.execution_count,
 
-handle_code_execution(State) ->
   %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
-  ierl_message_sender:send(State, Request, "execute_reply", execute_reply, {"ok", ExeCount, {}, {}}),
+  ReplyArgs = {"ok", ExeCount, {}, {}},
+
+  ierl_message_sender:send_by_shell(
+    State,
+    Request,
+    "execute_reply",
+    execute_reply,
+    ReplyArgs
+  ),
 
   %%% 6. SEND PYOUT MESSAGE ON IOPUB
-  ierl_message_sender:send_pyout(State, Request, Result),
+  PyoutArgs = {ExeCount, Value},
+
+  ierl_message_sender:send_by_io(State, Request, "pyout", pyout, PyoutArgs),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  ierl_message_sender:send(State, Request, "status", idle, {}),
+  ierl_message_sender:send_by_io(State, Request, "status", idle, {}).
 
-  State.
+handle_code_exception(State, Request, Exception, Reason) ->
+  ExeCount = State#shell_state.execution_count,
 
-handle_code_exception(State) ->
   %% TODO - each char of Traceback being output on separate line
   %% TODO - Traceback appears as a list of a million chars :/
   %% Leaving Traceback param as an empty list for now, and outputting via pyout
   %% reply_type, status, exe_count, excetpionName, ExceptionValue, TracebackList
 
   %%% 5. SEND EXECUTE_REPLY MESSAGE ON SHELL SOCKET
-  ierl_message_sender:send(State, Request, "execute_reply", execute_reply_error, {"error", ExeCount, Exception, Reason, []}),
+  ReplyArgs = {"error", ExeCount, Exception, Reason, []},
+
+  ierl_message_sender:send_by_shell(
+    State,
+    Request,
+    "execute_reply",
+    execute_reply_error,
+    ReplyArgs
+  ),
 
   %%% 6. SEND PYOUT MESSAGE ON IOPUB
-  ierl_message_sender:send_pyout(State, Request, Result),
+  PyoutArgs = {ExeCount, Reason},
+
+  ierl_message_sender:send_by_io(State, Request, "pyout", pyout, PyoutArgs),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  ierl_message_sender:send(State, Request, "status", idle, {}),
-
-  State.
+  ierl_message_sender:send_by_io(State, Request, "status", idle, {}).
 
 handle_complete_request(State, Request) ->
-  case ierl_message_parser:parse(Content, complete_request) of
+  case ierl_message_parser:parse(Request#request.content, complete_request) of
     {ok, _Text, _Line, _Block, _CursorPos} ->
       %% TODO - do something with complete_request
       print:line("TODO")

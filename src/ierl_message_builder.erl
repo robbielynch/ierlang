@@ -38,7 +38,7 @@ generate_content(Type, Args) ->
     idle                -> {struct, [{execution_state, "idle"    }]};
     starting            -> {struct, [{execution_state, "starting"}]};
     metadata            -> {struct, []};
-    kernel_info_reply   -> kernel_info_reply()
+    kernel_info_reply   -> kernel_info_reply();
     execute_reply       -> execute_reply(Args);
     execute_reply_error -> execute_reply_error(Args);
     pyout               -> pyout(Args);
