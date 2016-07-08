@@ -61,29 +61,26 @@ get_module_name_from_code([Char|RestOfCode]) when (Char > 96) and (Char < 123) -
 %% @doc Executes the given code with the given variable bindings
 %%      Returns the code execution value and the new variable bindings
 execute(Code, Bindings) ->
-  try
-    {ok, Tokens, _} = erl_scan:string(Code),
-    {ok, [Form]} = erl_parse:parse_exprs(Tokens),
-    {value, Value, NewBindings} = erl_eval:expr(Form, Bindings),
-    % Convert Value to something printable.
-    % This is required in order to allow all data structures
-    % to be encoded to json
-    case type_of(Value) of
-      list -> ReturnValue = Value;
-      integer -> ReturnValue = Value;
-      float -> ReturnValue = Value;
-      _ -> ReturnValue = lists:flatten(io_lib:format("~p", [Value]))
-    end,
-    print:line("code execution return value = ", [ReturnValue]),
-    {ok, ReturnValue, NewBindings}
-  catch
-    Exception:Reason ->
-      E = lists:flatten(io_lib:format("~p", [Exception])),
-      R = lists:flatten(io_lib:format("~p", [Reason])),
-      print:line("Exception = ", [E]),
-      print:line("Reason = ", [R]),
-      {error, E, R}
-  end.
+  io:format("~p~n", [Code]),
+
+  {ok, Tokens, _} = erl_scan:string(Code),
+  {ok, [Form]}    = erl_parse:parse_exprs(Tokens),
+
+  {value, Value, NewBindings} = erl_eval:expr(Form, Bindings),
+
+  % Convert Value to something printable.
+  % This is required in order to allow all data structures
+  % to be encoded to json
+  ReturnValue = case type_of(Value) of
+    list    -> Value;
+    integer -> Value;
+    float   -> Value;
+    _       -> lists:flatten(io_lib:format("~p", [Value]))
+  end,
+
+  print:line("code execution return value = ", [ReturnValue]),
+
+  {ok, ReturnValue, NewBindings}.
 
 type_of(X) when is_integer(X)   -> integer;
 type_of(X) when is_float(X)     -> float;

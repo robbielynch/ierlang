@@ -101,7 +101,10 @@ handle_execute_request(State, Request) ->
   ierl_message_sender:send_by_io(State, Request, "pyin", pyin, PyinArgs),
 
   %%% 4. EVALUATE THE ERLANG CODE
-  CodeEvaluation = ierl_code_manager:module_or_expression(State, ParsedContent),
+  CodeEvaluation = ierl_code_manager:module_or_expression(
+    ParsedContent#parsed_code.code,
+    State#shell_state.bindings
+  ),
 
   case CodeEvaluation of
     {ok, CompileResultList}    -> handle_compilation_result(State, Request, CompileResultList);
@@ -136,7 +139,9 @@ handle_compilation_result(State, Request, CompileResultList) ->
   ierl_message_sender:send_by_io(State, Request, "pyout", pyout, PyoutArgs),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  ierl_message_sender:send_by_io(State, Request, "status", idle, {}).
+  ierl_message_sender:send_by_io(State, Request, "status", idle, {}),
+
+  State#shell_state{execution_count = State#shell_state.execution_count + 1}.
 
 handle_code_execution(State, Request, Value, NewBindings) ->
   ExeCount = State#shell_state.execution_count,
@@ -158,7 +163,12 @@ handle_code_execution(State, Request, Value, NewBindings) ->
   ierl_message_sender:send_by_io(State, Request, "pyout", pyout, PyoutArgs),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  ierl_message_sender:send_by_io(State, Request, "status", idle, {}).
+  ierl_message_sender:send_by_io(State, Request, "status", idle, {}),
+
+  State#shell_state{
+    execution_count = State#shell_state.execution_count + 1,
+    bindings        = NewBindings
+  }.
 
 handle_code_exception(State, Request, Exception, Reason) ->
   ExeCount = State#shell_state.execution_count,
@@ -185,7 +195,9 @@ handle_code_exception(State, Request, Exception, Reason) ->
   ierl_message_sender:send_by_io(State, Request, "pyout", pyout, PyoutArgs),
 
   %%% 7. SEND IDLE STATUS MESSAGE ON IOPUB
-  ierl_message_sender:send_by_io(State, Request, "status", idle, {}).
+  ierl_message_sender:send_by_io(State, Request, "status", idle, {}),
+
+  State#shell_state{execution_count = State#shell_state.execution_count + 1}.
 
 handle_complete_request(State, Request) ->
   case ierl_message_parser:parse(Request#request.content, complete_request) of
