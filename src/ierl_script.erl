@@ -15,15 +15,15 @@
 %% Receives a list of arguments from IPython.
 %% The list contains the absolute path to the kernel.json file.
 %% The kernel.json file contains:
-%%      stdin_port: 52248,
-%%      ip: "127.0.0.1",
-%%      control_port: 52249,
-%%      hb_port: 52250,
+%%      stdin_port:       52248,
+%%      ip:               "127.0.0.1",
+%%      control_port:     52249,
+%%      hb_port:          52250,
 %%      signature_scheme: "hmac-sha256",
-%%      key: "",
-%%      shell_port: 52246,
-%%      transport: "tcp",
-%%      iopub_port: 52247
+%%      key:              "",
+%%      shell_port:       52246,
+%%      transport:        "tcp",
+%%      iopub_port:       52247
 
 main(JsonFile) ->
   %% Read json file
