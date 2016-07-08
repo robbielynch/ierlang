@@ -27,15 +27,39 @@ module_or_expression([$-,$m,$o,$d,$u,$l,$e,$(|RestOfCode], _Bindings) ->
   % 2. Save file in some folder TODO - Make separate folder for modules
   FullCode = lists:append("-module(", RestOfCode),
   FileName = lists:append(ModuleName, ".erl"),
-  {ok, IODevice} = file:open(FileName, [write]), file:write(IODevice, FullCode), file:close(IODevice),
+
+  {ok, Cwd} = file:get_cwd(),
+
+  TempDir = filename:join([Cwd, "lib", "temp"]),
+
+  file:make_dir(TempDir),
+
+  FilePath = filename:join(TempDir, FileName),
+
+  {ok, IODevice} = file:open(FilePath, [write]),
+  ok             = file:write(IODevice, FullCode),
+  ok             = file:close(IODevice),
 
   print:line("Trying to compile module"),
   % 3 + 4. Compile Module, Capture Result and Return
-  CompileResult = os:cmd(lists:append("erlc ", FileName)),
+  CompileResult = os:cmd(lists:append("cd lib/temp && erlc ", FilePath)),
 
   print:line("Compiled result: ", CompileResult),
 
-  {ok,CompileResult};
+  % Loading the compiled file if successfull
+  case CompileResult of
+    [] ->
+      true = code:add_patha(TempDir),
+
+      BeamFileName   = lists:append(ModuleName, ".beam"),
+      BeamFilePath   = filename:join(TempDir, BeamFileName),
+      {ok, BeamData} = file:read_file(BeamFilePath),
+
+      {module, _} = code:load_binary(list_to_atom(ModuleName), BeamFileName, BeamData);
+    _ -> ok
+  end,
+
+  {ok, CompileResult};
 
 %% Operating System Command
 module_or_expression([$;,$;|Code], _Bindings) ->
