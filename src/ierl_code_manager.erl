@@ -59,13 +59,21 @@ get_module_name_from_code([Char|RestOfCode]) when (Char > 96) and (Char < 123) -
 %% @doc Executes the given code with the given variable bindings
 %%      Returns the code execution value and the new variable bindings
 execute(Code, Bindings) ->
-  {ok, Tokens, _} = erl_scan:string(Code),
-  {ok, [Form]}    = erl_parse:parse_exprs(Tokens),
+  try
+    {ok, Tokens, _} = erl_scan:string(Code),
+    {ok, [Form]}    = erl_parse:parse_exprs(Tokens),
 
-  {value, Value, NewBindings} = erl_eval:expr(Form, Bindings),
+    {value, Value, NewBindings} = erl_eval:expr(Form, Bindings),
 
-  % Convert Value to something printable.
-  % This is required in order to display the result in the "Out[x]"` field.
-  ReturnValue = list_to_binary(lists:flatten(io_lib:format("~p", [Value]))),
+    % Convert Value to something printable.
+    % This is required in order to display the result in the "Out[x]"` field.
+    ReturnValue = list_to_binary(lists:flatten(io_lib:format("~p", [Value]))),
 
-  {ok, ReturnValue, NewBindings}.
+    {ok, ReturnValue, NewBindings}
+  catch
+    Exception:Reason ->
+      E = lists:flatten(io_lib:format("~p", [Exception])),
+      R = lists:flatten(io_lib:format("~p", [Reason])),
+
+      {error, E, R}
+  end.

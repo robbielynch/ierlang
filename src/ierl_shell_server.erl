@@ -132,7 +132,7 @@ handle_compilation_result(State, Request, CompileResultList) ->
   ),
 
   %%% 6. SEND PYOUT MESSAGE ON IOPUB
-  PyoutArgs = {ExeCount, CompiledResult},
+  PyoutArgs = {ExeCount, list_to_binary(CompiledResult)},
 
   ierl_message_sender:send_by_io(State, Request, "pyout", pyout, PyoutArgs),
 
@@ -188,7 +188,7 @@ handle_code_exception(State, Request, Exception, Reason) ->
   ),
 
   %%% 6. SEND PYOUT MESSAGE ON IOPUB
-  PyoutArgs = {ExeCount, Reason},
+  PyoutArgs = {ExeCount, list_to_binary(Reason)},
 
   ierl_message_sender:send_by_io(State, Request, "pyout", pyout, PyoutArgs),
 
