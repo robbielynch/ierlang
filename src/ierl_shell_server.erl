@@ -110,9 +110,7 @@ handle_execute_request(State, Request) ->
     {ok, CompileResultList}    -> handle_compilation_result(State, Request, CompileResultList);
     {ok, Value, NewBindings}   -> handle_code_execution(State, Request, Value, NewBindings);
     {error, Exception, Reason} -> handle_code_exception(State, Request, Exception, Reason)
-  end,
-
-  State#shell_state{execution_count = State#shell_state.execution_count + 1}.
+  end.
 
 handle_compilation_result(State, Request, CompileResultList) ->
   CompiledResult = case CompileResultList of
