@@ -100,6 +100,7 @@ alias docker-root-here='docker run --rm -it -v "$PWD":/work -w /work'
 ## Jupyter Notebook
 
 1. Build the notebook container
+
     ```bash
     docker build                        \
       -t ierlang                        \
@@ -114,26 +115,17 @@ alias docker-root-here='docker run --rm -it -v "$PWD":/work -w /work'
     ```
 
 2. Run the server
+
     ```bash
     docker-here -p 8888:8888 ierlang
     ```
 
 ## Development
 
-Launch a container:
-
 ```bash
 docker-here -p 8888:8888 ierlang bash
-```
 
-Compile:
-
-```bash
 rm -rf _build/default/rel/ && rm -rf _build/default/lib/ierlang/ && rebar3 release
-```
 
-Start:
-
-```bash
 jupyter notebook --ip=0.0.0.0 --notebook-dir=/work/notebooks/
 ```
