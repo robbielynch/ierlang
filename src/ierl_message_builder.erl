@@ -80,40 +80,16 @@ execute_reply_error({"error", ExecutionCount, ExceptionName, _ExceptionValue, Tr
   ]}.
 
 pyout({ExecutionCount, CodeOutput}) ->
-  PyoutContent =
-  try
-    Data = {struct, [
-    {'text/html', CodeOutput},
+  Data = {struct, [
+    {'text/html',  CodeOutput},
     {'text/plain', CodeOutput}
   ]},
 
-  DataJson = mochijson2:encode(Data),
-
   Content = {struct,    [
     {execution_count, ExecutionCount},
-    {data, DataJson},
-    {metadata, {}}
-  ]},
-
-  mochijson2:encode(Content)
-  catch
-      _:_ ->
-        FrmtCode = io_lib:format("~p", [CodeOutput]),
-        FrmtData = {struct, [
-          {'text/html',  FrmtCode},
-          {'text/plain', FrmtCode}
-        ]},
-        FrmtDataJson = mochijson2:encode(FrmtData),
-
-        FrmtContent = {struct,    [
-        {execution_count, ExecutionCount},
-        {data,            FrmtDataJson},
-        {metadata,        {}}
-        ]},
-
-        mochijson2:encode(FrmtContent)
-  end,
-  PyoutContent.
+    {data,            Data},
+    {metadata,        {}}
+  ]}.
 
 pyin({Code, ExecutionCount}) ->
   {struct, [
@@ -130,14 +106,11 @@ pyerr({_ExceptionName, ExecutionCount, _ExceptionValue, Traceback}) ->
   ]}.
 
 display_data({Source, RawData, _MetaData}) ->
-  DataStruct = {struct, [
+  Data = {struct, [
     {'text/html',  RawData},
     {'text/plain', RawData}
   ]},
 
-  Data = mochijson2:encode(DataStruct),
-
-  % Create the content
   Content = {struct,    [
     {source,   Source},
     {data,     Data},

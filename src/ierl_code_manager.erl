@@ -65,12 +65,7 @@ execute(Code, Bindings) ->
   {value, Value, NewBindings} = erl_eval:expr(Form, Bindings),
 
   % Convert Value to something printable.
-  % This is required in order to allow all data structures
-  % to be encoded to json
-  ReturnValue = case Value of
-    X when is_integer(X); is_float(X); is_list(X) -> X;
-
-    X -> lists:flatten(io_lib:format("~p", [X]))
-  end,
+  % This is required in order to display the result in the "Out[x]"` field.
+  ReturnValue = list_to_binary(lists:flatten(io_lib:format("~p", [Value]))),
 
   {ok, ReturnValue, NewBindings}.
