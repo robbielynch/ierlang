@@ -1,0 +1,203 @@
+--- .venv-py2/lib/python2.7/site-packages/IPython/kernel/zmq/session.py	2014-12-02 22:16:01.000000000 -0600
++++ patches/session.py	2014-12-02 23:07:00.000000000 -0600
+@@ -838,9 +838,200 @@
+         else:
+             message['content'] = msg_list[4]
+ 
++        ###################################################################################
++        ##IERLANG CODE#####################################################################
++        ##Extract header elements from erlang strings
++        erlang_debug = False
++        ierl_header = extract_dates(header)
++        try:
++            ierl_header['username'] = self.erl_string_to_string(ierl_header['username'], erlang_debug)
++        except Exception:
++            ierl_header['username'] = "not_the_ierlang_kernel"
++
++        ##If using the ERLANG_KERNEL then parse the erlang strings
++        if ierl_header['username'] == "ierlang_kernel":
++            ierl_header['session'] = self.erl_string_to_string(ierl_header['session'], erlang_debug)
++            ierl_header['msg_id'] = self.erl_string_to_string(ierl_header['msg_id'], erlang_debug)
++            ierl_header['msg_type'] = self.erl_string_to_string(ierl_header['msg_type'], erlang_debug)
++            #Build message dict
++            message['header'] = ierl_header
++            message['msg_id'] = self.erl_string_to_string(header["msg_id"], erlang_debug)
++            if content:
++                ierl_msg_content = self.unpack(msg_list[4])
++                message['content'] = self.ierlang_content_parser(ierl_msg_content, ierl_header['msg_type'], erlang_debug)
++            else:
++                ierl_msg_content = msg_list[4]
++                message['content'] = {}
++            if erlang_debug:
++                print("\n")
++                print("[IErlang/IPython] Received message from kernel....")
++                print("[IErlang/IPython] header = " + str(message['header']))
++                print("[IErlang/IPython] msg_id = " + str(message['msg_id']))
++                print("[IErlang/IPython] parent_header = " + str(message['parent_header']))
++                print("[IErlang/IPython] metadata = " + str(message['metadata']))
++                print("[IErlang/IPython] content = " + str(message['content']))
++                print("\n")
++        ##END IERLANG CODE#####################################################################
++
+         message['buffers'] = msg_list[5:]
+         return message
+ 
++    ##IERLANG CODE#####################################################################
++    ##THE NEXT 4 FUNCTIONS ARE TO ASSIST WITH THE PARSING OF ERLANG STRINGS
++    def erl_string_to_string(self, erl_string, erlang_debug=False):
++        """
++        This function recursively converts erlang strings
++        (i.e. lists of integers/lists of lists of lists of ints etc..).
++        Returns the string representation of the list
++        """
++        string = ""
++
++        if erl_string == []:
++            return "[]"
++
++        for c in erl_string:
++            # Int
++            if isinstance(c, int):
++                string += str(chr(c))
++            # String
++            elif isinstance(c, str):
++                string += c
++             # List
++            elif isinstance(c, list):
++                string += self.erl_string_to_string(c)
++            # Erlang Tuple, Python Dict
++            else:
++                string += str(c)
++        return string
++    ##IERLANG CODE#####################################################################
++    def ierlang_content_parser(self, ierl_content, msg_type, erlang_debug=False):
++        """
++        Depending on the message type, the content is extracted accordingly.
++        """
++        content = {}
++        #status
++        if msg_type == "status":
++            content['execution_state'] = self.erl_string_to_string(ierl_content['execution_state'])
++            return content
++        elif msg_type == "execute_reply":
++            #{u'status': [111, 107], u'execution_count': 1, u'payload': [],
++            # u'user_expressions': {}, u'user_variables': {}}
++            content['status'] = self.erl_string_to_string(ierl_content['status'])
++            if content['status'] == "ok":
++                content['execution_count'] = ierl_content['execution_count']
++                content['payload'] = ierl_content['payload']
++                content['user_expressions'] = ierl_content['user_expressions']
++                content['user_variables'] = ierl_content['user_variables']
++                return content
++            elif content['status'] == "error":
++                content['execution_count'] = ierl_content['execution_count']
++                content['ename'] = self.erl_string_to_string(ierl_content['ename'])
++                content['evalue'] = self.erl_string_to_string(ierl_content['evalue'])
++                traceback = self.erl_string_to_string(ierl_content['traceback'])
++                content['traceback'] = traceback.translate(None, "\r")
++                return content
++        elif msg_type == "pyout":
++            #content = {u'execution_count': 1,
++            # u'data': [123, [34, [116, 101, 120, 116, 47, 112, 108, 97, 105, 110], 34],
++            # 58, [34, [102, 98], 34], 44, [34, [116, 101, 120, 116, 47, 104, 116, 109, 108], 34],
++            # 58, [34, [102, 98], 34], 125],
++            # u'metadata': {}}
++            content['execution_count'] = ierl_content['execution_count']
++            content['metadata'] = ierl_content['metadata']
++            content['data'] = self.extract_ierl_data(ierl_content['data'])
++            return content
++        elif msg_type == "pyerr":
++            content['execution_count'] = ierl_content['execution_count']
++            content['ename'] = self.erl_string_to_string(ierl_content['ename'])
++            content['evalue'] = self.erl_string_to_string(ierl_content['evalue'])
++            content['traceback'] = self.erl_string_to_string(ierl_content['traceback'])
++            return content
++        elif msg_type == "display_data":
++            content['source'] = self.erl_string_to_string(ierl_content['source'])
++            content['data'] = self.extract_ierl_data(ierl_content['data'])
++            content['metadata'] = ierl_content['metadata']
++            return content
++        else:
++            return ierl_content
++    ##IERLANG CODE#####################################################################
++    def extract_ierl_data(self, ierl_data):
++        """
++        This extracts the data from the content list of integers(erlang string)
++        returns the data as a dict
++        """
++        import json
++
++        # Convert data erl string to json string
++        original_data_json = self.erl_string_to_string(ierl_data)
++        self.ierlang_debug_print(["ErlData as string = " + original_data_json])
++
++        # Convert json string to dict
++        data_dict = json.loads(original_data_json)
++
++        # Convert mime elements to strings
++        # so they can be output to the user.
++        if data_dict['text/html']:
++            if self.is_printable_erlang_string(data_dict['text/html']):
++                self.ierlang_debug_print(["is_printable_erlang_string == true"])
++                text_html_value = data_dict['text/html']
++                text_html_value_as_string = self.erl_string_to_string(text_html_value)
++                self.ierlang_debug_print(["text html value as string = " + text_html_value_as_string])
++                # Replace all \n with <br />
++                text_html_value_as_string = text_html_value_as_string.replace("\n", "<br />")
++                text_html_value_as_string = text_html_value_as_string.replace("\\n", "<br />")
++                text_html_value_as_string = "<pre>" + text_html_value_as_string + "</pre>"
++                data_dict['text/html'] = text_html_value_as_string
++            else:
++                self.ierlang_debug_print(["is_printable_erlang_string == false"])
++                text_html_value = data_dict['text/html']
++                text_html_value_as_string = str(text_html_value)
++                self.ierlang_debug_print(["text html value as string = " + text_html_value_as_string])
++                data_dict['text/html'] = text_html_value_as_string
++        if data_dict['text/plain']:
++            if self.is_printable_erlang_string(data_dict['text/plain']):
++                self.ierlang_debug_print(["is_printable_erlang_string == true"])
++                text_plain_value = data_dict['text/plain']
++                text_plain_value_as_string = self.erl_string_to_string(text_plain_value)
++                self.ierlang_debug_print(["text plain value as string = " + text_plain_value_as_string])
++                data_dict['text/plain'] = text_plain_value_as_string
++            else:
++                self.ierlang_debug_print(["is_printable_erlang_string == false"])
++                text_plain_value = data_dict['text/plain']
++                text_plain_value_as_string = str(text_plain_value)
++                self.ierlang_debug_print(["text plain value as string = " + text_plain_value_as_string])
++                data_dict['text/plain'] = text_plain_value_as_string
++        return data_dict
++
++    def ierlang_debug_print(self, things_to_print, erlang_debug=False):
++        if erlang_debug:
++            for i in things_to_print:
++                if isinstance(i, str):
++                    print(i)
++                else:
++                    print(str(i))
++
++    ##IERLANG CODE#####################################################################
++    def is_printable_erlang_string(self, data):
++        """
++        Determines whether the given list is a printable
++        erlang string. i.e. All elements in the list
++        are have ASCII values >= 32 and < 127
++        """
++        #TODO - allow for unicode chars
++        if isinstance(data, list):
++            if data == []:
++                return False
++            for c in data:
++                #If printable char or LF or CR
++                if c < 32 or c >= 127:
++                    # Check for LF or CR or horizontal tab
++                    if c != 10 and c != 13 and c != 9:
++                        return False
++            return True
++        return False
++    ##END IERLANG CODE#################################################################
++    ###################################################################################
++
+ def test_msg2obj():
+     am = dict(x=1)
+     ao = Message(am)
