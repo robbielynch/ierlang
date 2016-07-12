@@ -16,10 +16,12 @@ start(ControlSocket)->
 
 loop(ControlSocket) ->
   control_listener(ControlSocket),
+
   loop(ControlSocket).
 
 control_listener(ControlSocket)->
   {ok, Msg} = erlzmq:recv(ControlSocket),
+
   io:format("[Control] ~s~n", [Msg]).
 
 %% TODO - Handle requests on the control server

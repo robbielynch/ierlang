@@ -86,3 +86,46 @@ IErlang.
 
 * [Demo](http://nbviewer.ipython.org/gist/anonymous/10775415)
 * [IErlang Wiki](https://github.com/robbielynch/ierlang/wiki)
+
+
+## Usage with Docker
+
+Add the following aliases to `~/.bash_profile` and source it:
+
+```bash
+alias docker-here='docker run --rm -it -u `id -u`:`id -g` -v "$PWD":/work -w /work'
+alias docker-root-here='docker run --rm -it -v "$PWD":/work -w /work'
+```
+
+## Jupyter Notebook
+
+1. Build the notebook container
+
+    ```bash
+    docker build                        \
+      -t ierlang                        \
+      --build-arg HOST_USER_UID=`id -u` \
+      --build-arg HOST_USER_GID=`id -g` \
+      -f docker/Dockerfile              \
+      "$PWD"
+
+    # OR the short version if you are user 1000:1000
+
+    docker build -t ierlang -f docker/Dockerfile "$PWD"
+    ```
+
+2. Run the server
+
+    ```bash
+    docker-here -p 8888:8888 ierlang
+    ```
+
+## Development
+
+```bash
+docker-here -p 8888:8888 ierlang bash
+
+rm -rf _build/default/rel/ && rm -rf _build/default/lib/ierlang/ && rebar3 release
+
+jupyter notebook --ip=0.0.0.0 --notebook-dir=/work/notebooks/
+```

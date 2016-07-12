@@ -17,16 +17,20 @@ start(HeartbeatSocket) ->
     loop(HeartbeatSocket).
 
 loop(HeartbeatSocket) ->
-   heartbeat_listener(HeartbeatSocket),
-   loop(HeartbeatSocket).
+    heartbeat_listener(HeartbeatSocket),
+
+    loop(HeartbeatSocket).
 
 %%% @doc Heartbeat - this keeps IPython alive
 %%%      by listening and replying to ping messages
 heartbeat_listener(HeartbeatSocket)->
     {ok, Msg} = erlzmq:recv(HeartbeatSocket),
+
     %% Reply to IPython with a ping
     heartbeat_responder(HeartbeatSocket, Msg).
+
 %%% @doc Sends a ping message to IPython via the Heartbeat Socket
 heartbeat_responder(HeartbeatSocket, Msg)->
-    %io:format("[Heartbeat] Keeping the dream alive"),
+    io:format("Heartbeat send: ~p~n", [Msg]),
+
     ok = erlzmq:send(HeartbeatSocket, Msg).

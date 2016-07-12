@@ -13,18 +13,30 @@
 -export([run/1]).
 
 %% @doc Function that creates and binds all zmq sockets. Starts the heartbeat, shell and control servers.
-run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort}, {iopubport, IOPubPort}, {stdinport, StdInPort}, {ip, IP}, {transport, Transport}])->
-    ConnectionStringBuilder1 = string:concat(binary_to_list(Transport),"://"),
+run(
+  [
+    {hbport,           HbPort         },
+    {signature_scheme, SignatureScheme},
+    {key,              Key            },
+    {shellport,        ShellPort      },
+    {controlport,      ControlPort    },
+    {iopubport,        IOPubPort      },
+    {stdinport,        StdInPort      },
+    {ip,               IP             },
+    {transport,        Transport      }
+  ]
+) ->
+  ConnectionStringBuilder1 = string:concat(binary_to_list(Transport),"://"),
   ConnectionStringBuilder2 = string:concat(binary_to_list(IP),":"),
-  ConnectionString = string:concat(ConnectionStringBuilder1, ConnectionStringBuilder2),
+  ConnectionString         = string:concat(ConnectionStringBuilder1, ConnectionStringBuilder2),
 
     %% Create Sockets that will be used to communicate with IPython
-    {ok,Context} = erlzmq:context(),
+    {ok, Context}         = erlzmq:context(),
     {ok, HeartbeatSocket} = erlzmq:socket(Context, rep),
-    {ok, ControlSocket} = erlzmq:socket(Context, router),
-    {ok, StdinSocket} = erlzmq:socket(Context, router),
-    {ok, ShellSocket} = erlzmq:socket(Context, router),
-    {ok, IOPubSocket} = erlzmq:socket(Context, pub),
+    {ok, ControlSocket}   = erlzmq:socket(Context, router),
+    {ok, StdinSocket}     = erlzmq:socket(Context, router),
+    {ok, ShellSocket}     = erlzmq:socket(Context, router),
+    {ok, IOPubSocket}     = erlzmq:socket(Context, pub),
 
     %% Bind Sockets to Ports
   ok = erlzmq:bind(HeartbeatSocket, string:concat(ConnectionString, integer_to_list(HbPort))),
@@ -33,19 +45,18 @@ run([{hbport, HbPort}, {shellport, ShellPort}, {controlport, ControlPort}, {iopu
   ok = erlzmq:bind(ShellSocket, string:concat(ConnectionString, integer_to_list(ShellPort))),
   ok = erlzmq:bind(IOPubSocket, string:concat(ConnectionString, integer_to_list(IOPubPort))),
 
-  % Start the heartbeat server
-  spawn(ierl_heartbeat_server, start, [HeartbeatSocket]),
-  % Start the Shell server
-  spawn(ierl_shell_server, start, [ShellSocket, IOPubSocket]),
-  % Start the Control server
-  spawn(ierl_control_server, start, [ControlSocket]),
+  % Start the heartbeat, shell and controll servers
+  spawn(ierl_heartbeat_server, start, [HeartbeatSocket]              ),
+  spawn(ierl_shell_server,     start, [ShellSocket, IOPubSocket, Key]),
+  spawn(ierl_control_server,   start, [ControlSocket]                ),
 
   %% Constantly listen and reply to messages
   loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket).
 
 %% Function to listen and respond on all sockets.
 %% Constant loop keeps the kernel alive.
-loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket)->
+loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket) ->
   %% Keep listening and responding
   timer:sleep(5),
+
   loop(HeartbeatSocket, ControlSocket, StdinSocket, ShellSocket, IOPubSocket).
